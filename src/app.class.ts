@@ -8,7 +8,7 @@ import { MagaResponseInfo } from './types';
 import { md5 } from './utils';
 import { cacheManager } from './cache-manager.util';
 
-const prkomApi = axios.create({
+export const prkomApi = axios.create({
   baseURL: xEnv.YSTUTY_PRKOM_URL,
   timeout: 60e3,
 });
@@ -16,15 +16,19 @@ const prkomApi = axios.create({
 const APP_SETTING = 'app_setting';
 
 export class App {
-  public botTargets = new Map<
-    string,
+  public botTargets: Record<
+    number,
     {
-      id: number;
+      chatId: number;
       first_name: string;
       last_name: string;
       username: string;
+      loadCount: number;
+      uid: string;
+      // uids: string[];
     }
-  >();
+  > = {};
+
   public lastData = new Map<string, Map<string, MagaResponseInfo>>();
 
   public async init() {
@@ -40,7 +44,15 @@ export class App {
       this.lastData = lastData;
     }
 
+    // TODO: remove it
+    // ! for support old version
     if (botTargets && botTargets instanceof Map) {
+      for (const [k, v] of botTargets.entries()) {
+        if (v.id) {
+          this.botTargets[v.id] = { ...v, uid: k };
+        }
+      }
+    } else {
       this.botTargets = botTargets;
     }
   }
@@ -63,12 +75,30 @@ export class App {
     do {
       console.log(new Date().toLocaleString(), '[runWatcher] execute');
 
-      for (const uid of xEnv.WATCHING_UIDS) {
+      const targetValues = Object.values(this.botTargets);
+      const targetUids = targetValues.flatMap((e) => e.uid);
+
+      const uids = _.uniq(
+        [...xEnv.WATCHING_UIDS, ...targetUids].filter(Boolean),
+      );
+      for (const uid of uids) {
         try {
           const res = await prkomApi.get<MagaResponseInfo[]>(
             `/admission/get/${uid}`,
           );
           // console.log(res.data);
+
+          if (res.data.length === 0) {
+            for (const [k, v] of Object.entries(this.botTargets)) {
+              if (v.uid === uid) {
+                if ((v.loadCount = (v.loadCount || 0) + 1) > 3) {
+                  v.uid = null;
+                  this.lastData.delete(uid);
+                }
+              }
+            }
+            continue;
+          }
 
           if (!this.lastData.has(uid)) {
             const apps = new Map<string, MagaResponseInfo>();
@@ -98,9 +128,9 @@ export class App {
               const posDif = lastItem.position - item.position;
               if (posDif !== 0) {
                 changes.push(
-                  `🍥 <b>position</b> changed to ${
-                    posDif > 0 ? 'UP' : 'DOWN'
-                  } (last <code>${lastItem.position}</code>; new: <code>${
+                  `🍥 <b>ПОЗИЦИЯ</b> изменена ${
+                    posDif > 0 ? '☝️' : '👇'
+                  } (было: <code>${lastItem.position}</code>; стало: <code>${
                     item.position
                   }</code>)`,
                 );
@@ -108,19 +138,25 @@ export class App {
 
               if (lastInfo.numbersInfo !== info.numbersInfo) {
                 changes.push(
-                  `⭐️ <b>numbersInfo</b> changed (last: <code>${lastInfo.numbersInfo}</code>; new: <code>${info.numbersInfo}</code>)`,
+                  `💺 <b>МЕСТА</b> изменны (было: <code>${lastInfo.numbersInfo}</code>; стало: <code>${info.numbersInfo}</code>)`,
                 );
               }
 
               if (lastItem.totalScore !== item.totalScore) {
                 changes.push(
-                  `🌟 <b>totalScore</b> changed (last: <code>${lastItem.totalScore}</code>; new: <code>${item.totalScore}</code>)`,
+                  `🌟 <b>СУММА БАЛЛОВ</b> изменена (было: <code>${lastItem.totalScore}</code>; стало: <code>${item.totalScore}</code>)`,
                 );
               }
 
               if (lastItem.scoreInterview !== item.scoreInterview) {
                 changes.push(
-                  `❇️ <b>scoreInterview</b> changed (last: <code>${lastItem.scoreInterview}</code>; new: <code>${item.scoreInterview}</code>)`,
+                  `⭐️ <b>БАЛЛЫ СОБЕСА</b> изменены (было: <code>${lastItem.scoreInterview}</code>; стало: <code>${item.scoreInterview}</code>)`,
+                );
+              }
+
+              if (lastItem.scoreExam !== item.scoreExam) {
+                changes.push(
+                  `❇️ <b>БАЛЛЫ ЭКЗА</b> изменены (было: <code>${lastItem.scoreExam}</code>; стало: <code>${item.scoreExam}</code>)`,
                 );
               }
 
@@ -129,7 +165,7 @@ export class App {
                   const chatIds = _.uniq(
                     [
                       xEnv.TELEGRAM_CHAT_ID,
-                      this.botTargets.get(uid)?.id,
+                      ...targetValues.map((e) => e.uid === uid && e.chatId),
                     ].filter(Boolean),
                   );
 
@@ -137,17 +173,17 @@ export class App {
                     bot.telegram
                       .sendMessage(
                         chatId,
-                        `🦄 <b>(CHANGES DETECTED)</b> UID: [<code>${uid}</code>]\n` +
+                        `🦄 <b>(CHANGES DETECTED)</b> Уникальный код: [<code>${uid}</code>]\n` +
                           `<b>ComGroup:</b> <code>"${info.competitionGroupName}"</code>\n` +
                           `<b>FormTraining:</b> <code>"${info.formTraining}"</code>\n` +
                           `<b>DocBuildDate:</b> <code>"${info.buildDate}"</code>\n` +
-                          `\nChanges:\n` +
+                          `\nИзменения:\n` +
                           `${changes.join('\n')}`,
                         {
                           parse_mode: 'HTML',
                           ...Markup.inlineKeyboard([
                             Markup.button.url(
-                              'View on site',
+                              'Посмотреть на сайте',
                               `${xEnv.YSTU_URL}/files/prkom_svod/${app.filename}`,
                             ),
                           ]),
