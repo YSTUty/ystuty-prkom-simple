@@ -5,6 +5,7 @@
   <img src="https://img.shields.io/github/last-commit/YSTUty/ystuty-prkom-simple?style=flat-square" alt="GitHub last commit"/>
   <!-- <img src="https://img.shields.io/badge/dynamic/json?color=ced&style=flat-square&logo=telegram&label=Used by&suffix= user&query=ip&url=http://ip.jsontest.com" alt="GitHub last commit"/> -->
   <a href="https://vk.com/ystuty"><img src="https://img.shields.io/badge/Join-YSTUty-9cf?style=flat-square&logo=vk" alt="vk.com/ystuty"/></a>
+  <a href="https://t.me/ystu_pk_bot"><img src="https://img.shields.io/badge/Bot-Use now-229ED9?style=flat-square&logo=telegram" alt="vk.com/ystuty"/></a>
 </p>
 
 # [YSTUty] PrKom-simple
