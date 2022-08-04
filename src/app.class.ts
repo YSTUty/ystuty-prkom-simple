@@ -41,9 +41,14 @@ export class App {
   }
 
   public async getTarget(id: number) {
-    const key = `${id}:${id}`;
-    const session = await (redisSession as any).getSession(key);
+    const key = `session:${id}:${id}`;
+    const session = await redisSession.getSession(key);
     return session;
+  }
+
+  public async setTarget(id: number, session: any) {
+    const key = `session:${id}:${id}`;
+    redisSession.saveSession(key, session);
   }
 
   public async getTargets(ids: number[] = null) {
@@ -54,7 +59,7 @@ export class App {
       return {};
     }
 
-    const keys = ids.map((id) => `${id}:${id}`);
+    const keys = ids.map((id) => `session:${id}:${id}`);
     const data = await redisClient.mget(keys);
     const sessions = data.map((v) => {
       try {
@@ -71,11 +76,6 @@ export class App {
       }),
       {},
     ) as Record<number, BotTarget>;
-  }
-
-  public async setTarget(id: number, session: any) {
-    const key = `${id}:${id}`;
-    redisSession.saveSession(key, session);
   }
 
   public async checkVersion() {
