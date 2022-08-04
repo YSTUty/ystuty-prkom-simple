@@ -50,6 +50,9 @@ export class App {
     if (!ids || ids.length === 0) {
       ids = await this.getTargetChatIds();
     }
+    if (ids.length === 0) {
+      return {};
+    }
 
     const keys = ids.map((id) => `${id}:${id}`);
     const data = await redisClient.mget(keys);
