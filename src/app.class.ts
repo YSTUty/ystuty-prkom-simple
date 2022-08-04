@@ -79,13 +79,15 @@ export class App {
     const curVer = process.env.npm_package_version;
     const lastVer = await redisClient.get('app:last-version');
 
-    if (lastVer && lastVer !== curVer) {
+    if (lastVer !== curVer) {
       await redisClient.set('app:last-version', curVer);
-      console.log(`✨ App version changed from ${lastVer} to ${curVer}`);
-      // ? TODO: add notify other users
-      notifyAdmin(
-        `✨ Bot updated from <code>v${lastVer}</code> to <code>v${curVer}</code>`,
-      );
+      if (lastVer) {
+        console.log(`✨ App version changed from ${lastVer} to ${curVer}`);
+        // ? TODO: add notify other users
+        notifyAdmin(
+          `✨ Bot updated from <code>v${lastVer}</code> to <code>v${curVer}</code>`,
+        );
+      }
     }
   }
 
