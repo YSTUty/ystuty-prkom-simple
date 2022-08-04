@@ -235,6 +235,7 @@ export class App {
                           `<b>• ${info.competitionGroupName}</b>\n` +
                           `<b>• ${info.formTraining}</b>\n` +
                           `<b>• ${info.buildDate}</b>\n` +
+                          `<b>• ${info.numbersInfo}</b>\n` +
                           `\nИзменения:\n` +
                           `${changes.join('\n')}`,
                         {
