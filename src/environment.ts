@@ -26,3 +26,11 @@ export const WATCHING_UIDS: string[] =
 export const TELEGRAM_BOT_TOKEN: string =
   process.env.TELEGRAM_BOT_TOKEN || null;
 export const TELEGRAM_CHAT_ID: number = +process.env.TELEGRAM_CHAT_ID || null;
+
+// Redis
+export const REDIS_HOST: string = process.env.REDIS_HOST || '127.0.0.1';
+export const REDIS_PORT: number = +process.env.REDIS_PORT || 6379;
+export const REDIS_PASSWORD: string = process.env.REDIS_PASSWORD;
+export const REDIS_DATABASE: number = +process.env.REDIS_DATABASE || 0;
+export const REDIS_PREFIX: string =
+  process.env.REDIS_PREFIX ?? 'tg.bot.ystuty-prkom:';

@@ -1,33 +1,35 @@
 import axios from 'axios';
 import * as _ from 'lodash';
 import { Markup } from 'telegraf';
+import { promisify } from 'util';
 
 import * as xEnv from './environment';
-import { bot } from './bot';
-import { MagaResponseInfo } from './types';
+import { bot, redisSession } from './bot';
+import { BotTarget, MagaResponseInfo } from './types';
 import { md5 } from './utils';
 import { cacheManager } from './cache-manager.util';
+
+//
+const { client: redisClient } = redisSession;
+const redisKeys: (pattern: string) => Promise<string[]> = promisify(
+  redisClient.keys,
+).bind(redisClient);
+const redisMGet: (keys: string[]) => Promise<string[]> = promisify(
+  redisClient.mget,
+).bind(redisClient);
+//
 
 export const prkomApi = axios.create({
   baseURL: xEnv.YSTUTY_PRKOM_URL,
   timeout: 60e3,
 });
 
-const APP_SETTING = 'app_setting';
+// TODO: rename ii
+const CACHEFILE_LAST_DAT = 'app_setting';
 
 export class App {
-  public botTargets: Record<
-    number,
-    {
-      chatId: number;
-      first_name: string;
-      last_name: string;
-      username: string;
-      loadCount: number;
-      uid: string;
-      // uids: string[];
-    }
-  > = {};
+  /** @deprecated Use redis session */
+  public botTargets: Record<number, Partial<BotTarget>> = {};
 
   public lastData = new Map<string, Map<string, MagaResponseInfo>>();
 
@@ -36,9 +38,55 @@ export class App {
     this.runWatcher().then();
   }
 
+  public async getTargetKeys() {
+    const prefix = `${xEnv.REDIS_PREFIX}session:`;
+    const keys = await redisKeys(`${prefix}*`);
+    return keys.map((key) => key.replace(prefix, ''));
+  }
+
+  public async getTargetChatIds() {
+    const keys = await this.getTargetKeys();
+    return keys.map((key) => Number(key.split(':')[0]));
+  }
+
+  public async getTarget(id: number) {
+    const key = `${id}:${id}`;
+    const session = await (redisSession as any).getSession(key);
+    return session;
+  }
+
+  public async getTargets(ids: number[] = null) {
+    if (!ids || ids.length === 0) {
+      ids = await this.getTargetChatIds();
+    }
+
+    const keys = ids.map((id) => `${id}:${id}`);
+    const data = await redisMGet(keys);
+    const sessions = data.map((v) => {
+      try {
+        return JSON.parse(v);
+      } catch {
+        return null;
+      }
+    });
+
+    return ids.reduce(
+      (prev, id, index) => ({
+        ...prev,
+        ...(sessions[index] && { [id]: sessions[index] }),
+      }),
+      {},
+    ) as Record<number, BotTarget>;
+  }
+
+  public async setTarget(id: number, session: any) {
+    const key = `${id}:${id}`;
+    redisSession.saveSession(key, session);
+  }
+
   public async load() {
     const { lastData, botTargets } =
-      (await cacheManager.readData(APP_SETTING, true)) || {};
+      (await cacheManager.readData(CACHEFILE_LAST_DAT, true)) || {};
 
     if (lastData && lastData instanceof Map) {
       this.lastData = lastData;
@@ -57,39 +105,36 @@ export class App {
     }
   }
 
-  public async save(exit = false) {
+  public async save() {
     await cacheManager.update(
-      APP_SETTING,
+      CACHEFILE_LAST_DAT,
       {
         lastData: this.lastData,
         botTargets: this.botTargets,
       },
       9e12,
     );
-    if (exit) {
-      process.exit();
-    }
   }
 
   public async runWatcher() {
     do {
       console.log(new Date().toLocaleString(), '[runWatcher] execute');
 
-      const targetValues = Object.values(this.botTargets);
-      const targetUids = targetValues.flatMap((e) => e.uid);
+      const targets = await this.getTargets();
+      const targetEntries = Object.entries({ ...this.botTargets, ...targets });
+      const targetUids = targetEntries.flatMap(([, v]) => v.uid);
 
       const uids = _.uniq(
         [...xEnv.WATCHING_UIDS, ...targetUids].filter(Boolean),
       );
       for (const uid of uids) {
         try {
-          const res = await prkomApi.get<MagaResponseInfo[]>(
+          const { data: list } = await prkomApi.get<MagaResponseInfo[]>(
             `/admission/get/${uid}`,
           );
-          // console.log(res.data);
 
-          if (res.data.length === 0) {
-            for (const [k, v] of Object.entries(this.botTargets)) {
+          if (list.length === 0) {
+            for (const [, v] of targetEntries) {
               if (v.uid === uid) {
                 if ((v.loadCount = (v.loadCount || 0) + 1) > 3) {
                   v.uid = null;
@@ -105,7 +150,7 @@ export class App {
             this.lastData.set(uid, apps);
           }
 
-          for (const app of res.data) {
+          for (const app of list) {
             const { info, item } = app;
 
             const apps = this.lastData.get(uid);
@@ -165,7 +210,9 @@ export class App {
                   const chatIds = _.uniq(
                     [
                       xEnv.TELEGRAM_CHAT_ID,
-                      ...targetValues.map((e) => e.uid === uid && e.chatId),
+                      ...targetEntries.map(
+                        ([chatId, v]) => v.uid === uid && chatId,
+                      ),
                     ].filter(Boolean),
                   );
 
@@ -182,10 +229,16 @@ export class App {
                         {
                           parse_mode: 'HTML',
                           ...Markup.inlineKeyboard([
-                            Markup.button.url(
-                              'Посмотреть на сайте',
-                              `${xEnv.YSTU_URL}/files/prkom_svod/${app.filename}`,
-                            ),
+                            ...[
+                              app.filename
+                                ? [
+                                    Markup.button.url(
+                                      'Посмотреть на сайте',
+                                      `${xEnv.YSTU_URL}/files/prkom_svod/${app.filename}`,
+                                    ),
+                                  ]
+                                : [],
+                            ],
                           ]),
                         },
                       )
@@ -218,3 +271,5 @@ export class App {
     } while (true);
   }
 }
+
+export const app = new App();

@@ -4,7 +4,6 @@ import * as lodash from 'lodash';
 
 import { CACHE_PATH } from './environment';
 import { MAP_replacer, MAP_reviver, md5 } from './utils';
-import { AnyMxRecord } from 'dns';
 
 export type CacheData<T = any> = {
   time: number;
@@ -17,6 +16,9 @@ export type PathType = string | [string, string];
 
 export class CacheManager {
   private cache: Record<string, CacheData> = {};
+
+  public replacer: (key: string, value: any) => any = MAP_replacer;
+  public reviver: (key: string, value: any) => any = MAP_reviver;
 
   constructor(public readonly path = CACHE_PATH) {
     Fs.ensureDir(this.path).then();
@@ -36,13 +38,8 @@ export class CacheManager {
     return ['', path] as PathType;
   }
 
-  public async create(
-    file: PathType,
-    data: AnyMxRecord,
-    ttl: number = 36e4,
-    replacer: (key: string, value: any) => any = MAP_replacer,
-  ) {
-    return this.update(file, data, ttl, replacer);
+  public async create(file: PathType, data: any, ttl: number = 36e4) {
+    return this.update(file, data, ttl);
   }
 
   public async delete(file: PathType) {
@@ -64,9 +61,8 @@ export class CacheManager {
     file: PathType,
     data: any,
     ttl: number = 36e4,
-    replacer: (key: string, value: any) => any = MAP_replacer,
+    mergLast = false,
   ) {
-    // console.log('\n\n-----', file, data);
     const arFile = await this.parseFilePath(file);
     if (!arFile) {
       return;
@@ -77,7 +73,7 @@ export class CacheManager {
     const name = this.genName(afile);
 
     const lastData = await this.readData(file, false);
-    if (!Array.isArray(data)) {
+    if (mergLast && !Array.isArray(data)) {
       data = lodash.merge(lastData, data);
     }
 
@@ -88,15 +84,14 @@ export class CacheManager {
       source: afile,
     };
 
-    await Fs.writeFile(path, JSON.stringify(this.cache[name], replacer, 2));
+    await Fs.writeFile(
+      path,
+      JSON.stringify(this.cache[name], this.replacer, 2),
+    );
   }
 
-  public async readData<T = any>(
-    file: PathType,
-    forceFile: boolean = false,
-    reviver: (key: string, value: any) => any = MAP_reviver,
-  ) {
-    const { data } = (await this.read<T>(file, forceFile, reviver)) || {
+  public async readData<T = any>(file: PathType, forceFile: boolean = false) {
+    const { data } = (await this.read<T>(file, forceFile)) || {
       data: null,
     };
     return data;
@@ -105,7 +100,6 @@ export class CacheManager {
   public async read<T = any>(
     file: PathType,
     forceFile: boolean = false,
-    reviver: (key: string, value: any) => any = MAP_reviver,
   ): Promise<CacheData<T> | null> {
     const arFile = await this.parseFilePath(file);
     if (!arFile) {
@@ -125,7 +119,7 @@ export class CacheManager {
 
     const str = await Fs.readFile(path, 'utf8');
     try {
-      return JSON.parse(str, reviver);
+      return JSON.parse(str, this.reviver);
     } catch (error) {
       console.error(error);
       return null;

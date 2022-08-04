@@ -54,3 +54,14 @@ export type MagaResponseInfo = {
   item: MagaAbiturientInfo;
   filename: string;
 };
+
+export type BotTarget = {
+  chatId: number;
+  first_name: string;
+  last_name: string;
+  username: string;
+
+  loadCount?: number;
+  uid?: string;
+  // uids: string[];
+};
