@@ -25,7 +25,15 @@ export const WATCHING_UIDS: string[] =
 
 export const TELEGRAM_BOT_TOKEN: string =
   process.env.TELEGRAM_BOT_TOKEN || null;
+// For debug messages
 export const TELEGRAM_CHAT_ID: number = +process.env.TELEGRAM_CHAT_ID || null;
+
+export const TELEGRAM_ADMIN_IDS: number[] =
+  (process.env.TELEGRAM_ADMIN_IDS &&
+    process.env.TELEGRAM_ADMIN_IDS.split(',')
+      .map((e) => Number(e.trim()))
+      .filter(Boolean)) ||
+  [];
 
 // Redis
 export const REDIS_HOST: string = process.env.REDIS_HOST || '127.0.0.1';

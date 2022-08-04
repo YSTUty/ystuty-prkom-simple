@@ -1,23 +1,13 @@
 import axios from 'axios';
 import * as _ from 'lodash';
 import { Markup } from 'telegraf';
-import { promisify } from 'util';
 
 import * as xEnv from './environment';
-import { bot, redisSession } from './bot';
+import { bot, notifyAdmin, redisSession } from './bot';
 import { BotTarget, MagaResponseInfo } from './types';
 import { md5 } from './utils';
 import { cacheManager } from './cache-manager.util';
-
-//
-const { client: redisClient } = redisSession;
-const redisKeys: (pattern: string) => Promise<string[]> = promisify(
-  redisClient.keys,
-).bind(redisClient);
-const redisMGet: (keys: string[]) => Promise<string[]> = promisify(
-  redisClient.mget,
-).bind(redisClient);
-//
+import { redisClient } from './redis.service';
 
 export const prkomApi = axios.create({
   baseURL: xEnv.YSTUTY_PRKOM_URL,
@@ -35,12 +25,13 @@ export class App {
 
   public async init() {
     await this.load();
+    await this.checkVersion();
     this.runWatcher().then();
   }
 
   public async getTargetKeys() {
     const prefix = `${xEnv.REDIS_PREFIX}session:`;
-    const keys = await redisKeys(`${prefix}*`);
+    const keys = await redisClient.keys(`${prefix}*`);
     return keys.map((key) => key.replace(prefix, ''));
   }
 
@@ -61,7 +52,7 @@ export class App {
     }
 
     const keys = ids.map((id) => `${id}:${id}`);
-    const data = await redisMGet(keys);
+    const data = await redisClient.mget(keys);
     const sessions = data.map((v) => {
       try {
         return JSON.parse(v);
@@ -82,6 +73,20 @@ export class App {
   public async setTarget(id: number, session: any) {
     const key = `${id}:${id}`;
     redisSession.saveSession(key, session);
+  }
+
+  public async checkVersion() {
+    const curVer = process.env.npm_package_version;
+    const lastVer = await redisClient.get('app:last-version');
+
+    if (lastVer && lastVer !== curVer) {
+      await redisClient.set('app:last-version', curVer);
+      console.log(`✨ App version changed from ${lastVer} to ${curVer}`);
+      // ? TODO: add notify other users
+      notifyAdmin(
+        `✨ Bot updated from <code>v${lastVer}</code> to <code>v${curVer}</code>`,
+      );
+    }
   }
 
   public async load() {
@@ -174,7 +179,7 @@ export class App {
               if (posDif !== 0) {
                 changes.push(
                   `🍥 <b>ПОЗИЦИЯ</b> изменена ${
-                    posDif > 0 ? '☝️' : '👇'
+                    posDif > 0 ? '👍' : '👎'
                   } (было: <code>${lastItem.position}</code>; стало: <code>${
                     item.position
                   }</code>)`,
@@ -220,10 +225,11 @@ export class App {
                     bot.telegram
                       .sendMessage(
                         chatId,
-                        `🦄 <b>(CHANGES DETECTED)</b> Уникальный код: [<code>${uid}</code>]\n` +
-                          `<b>ComGroup:</b> <code>"${info.competitionGroupName}"</code>\n` +
-                          `<b>FormTraining:</b> <code>"${info.formTraining}"</code>\n` +
-                          `<b>DocBuildDate:</b> <code>"${info.buildDate}"</code>\n` +
+                        `🦄 <b>(CHANGES DETECTED)</b>\n` +
+                          `Уникальный код: [<code>${uid}</code>]\n` +
+                          `<b>• ${info.competitionGroupName}</b>\n` +
+                          `<b>• ${info.formTraining}</b>\n` +
+                          `<b>• ${info.buildDate}</b>\n` +
                           `\nИзменения:\n` +
                           `${changes.join('\n')}`,
                         {

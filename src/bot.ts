@@ -1,5 +1,6 @@
 import { Telegraf, Composer } from 'telegraf';
 import RedisSession from 'telegraf-session-redis';
+import { ExtraReplyMessage } from 'telegraf/typings/telegram-types';
 import { app, prkomApi } from './app.class';
 import * as xEnv from './environment';
 import { ITextMessageContext } from './telegraf.interface';
@@ -39,6 +40,12 @@ bot.use((ctx: any, next) => {
   const oldValues = app.botTargets[ctx.from.id];
   delete app.botTargets[ctx.from.id];
 
+  if (!ctx.session.chatId) {
+    notifyAdmin(
+      `<b>[DEBUG]</b> New user: <code>${ctx.from.id}</code> <code>@${ctx.from.username}</code>`,
+    );
+  }
+
   ctx.session = {
     ...oldValues,
     ...ctx.session,
@@ -50,16 +57,21 @@ bot.use((ctx: any, next) => {
   next();
 });
 
-bot.command('app', (ctx) => {
-  console.log('app', app);
-  ctx.reply('see console');
-});
-
 bot.start((ctx) => {
   ctx.replyWithHTML(
     `Привет! Бот помогает отслеживать изменения в списке поступления ЯГТУ.\n` +
-      `Используй <code>/watch 123-456-789 10</code>, чтобы указать <i>уникальный код</i> для наблюдения.`,
+      `Используй <code>/watch 123-456-789 10</code>, чтобы указать <i>уникальный код</i> для наблюдения.\n\n` +
+      `<code>v${process.env.npm_package_version}</code>`,
   );
+});
+
+bot.command('app', (ctx) => {
+  if (!xEnv.TELEGRAM_ADMIN_IDS.includes(ctx.from.id)) {
+    return;
+  }
+
+  console.log('app', app);
+  ctx.reply('see console');
 });
 
 bot.command(
@@ -135,5 +147,21 @@ bot.command('watch', (ctx: ITextMessageContext) => {
 
   ctx.replyWithHTML(`Добавлено в наблюдение: <code>${uid}</code>`);
 });
+
+export const notifyAdmin = async (
+  message: string,
+  extra: ExtraReplyMessage = {},
+) => {
+  // TODO: FIX BIG SPAM
+  for (const uid of xEnv.TELEGRAM_ADMIN_IDS) {
+    try {
+      await bot.telegram.sendMessage(uid, message, {
+        parse_mode: 'HTML',
+        disable_notification: true,
+        ...extra,
+      });
+    } catch {}
+  }
+};
 
 export { bot };
