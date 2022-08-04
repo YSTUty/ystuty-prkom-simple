@@ -1,23 +1,21 @@
-import { Telegraf, Composer } from 'telegraf';
-import RedisSession from 'telegraf-session-redis';
+import { Telegraf, Composer, Context } from 'telegraf';
+import { TelegrafSessionRedis } from '@ivaniuk/telegraf-session-redis';
 import { ExtraReplyMessage } from 'telegraf/typings/telegram-types';
+
 import { app, prkomApi } from './app.class';
 import * as xEnv from './environment';
 import { ITextMessageContext } from './telegraf.interface';
 import { MagaResponseInfo } from './types';
+import { redisClient } from './redis.service';
 
 // if (!xEnv.TELEGRAM_BOT_TOKEN) {
 //   throw new Error('TELEGRAM_BOT_TOKEN is not defined');
 // }
 
-export const redisSession = new RedisSession({
-  store: {
-    host: xEnv.REDIS_HOST,
-    port: xEnv.REDIS_PORT,
-    db: xEnv.REDIS_DATABASE,
-    prefix: `${xEnv.REDIS_PREFIX}session:`,
-    password: xEnv.REDIS_PASSWORD,
-  },
+export const redisSession = new TelegrafSessionRedis({
+  client: redisClient,
+  getSessionKey: (ctx: Context) =>
+    ctx.from && ctx.chat && `session:${ctx.from.id}:${ctx.chat.id}`,
 });
 
 let bot = new Telegraf(xEnv.TELEGRAM_BOT_TOKEN);
@@ -34,7 +32,7 @@ bot.telegram.setMyCommands([
   { command: 'watch', description: 'Set watcher' },
 ]);
 
-bot.use(redisSession);
+bot.use(redisSession.middleware());
 bot.use((ctx: any, next) => {
   // !
   const oldValues = app.botTargets[ctx.from.id];
@@ -46,14 +44,20 @@ bot.use((ctx: any, next) => {
     );
   }
 
-  ctx.session = {
+  const toSession = {
     ...oldValues,
-    ...ctx.session,
     chatId: ctx.from.id,
     first_name: ctx.from.first_name,
     last_name: ctx.from.last_name,
     username: ctx.from.username,
   };
+
+  for (const key in toSession) {
+    if (toSession[key] !== undefined) {
+      ctx.session[key] = toSession[key];
+    }
+  }
+
   next();
 });
 
