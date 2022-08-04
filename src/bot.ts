@@ -7,6 +7,7 @@ import * as xEnv from './environment';
 import { ITextMessageContext } from './telegraf.interface';
 import { MagaResponseInfo } from './types';
 import { redisClient } from './redis.service';
+import { MAP_replacer } from './utils';
 
 // if (!xEnv.TELEGRAM_BOT_TOKEN) {
 //   throw new Error('TELEGRAM_BOT_TOKEN is not defined');
@@ -84,6 +85,55 @@ bot.command('app', (ctx) => {
 
   console.log('app', app);
   ctx.reply('see console');
+});
+
+bot.command('dump', async (ctx) => {
+  if (!xEnv.TELEGRAM_ADMIN_IDS.includes(ctx.from.id)) {
+    return;
+  }
+
+  const [, type] = ctx.message.text.split(' ');
+
+  switch (type?.toLowerCase()) {
+    case 'full': {
+      const targets = await app.getTargets();
+      ctx.replyWithDocument({
+        source: Buffer.from(
+          JSON.stringify({ lastData: app.lastData, targets }, MAP_replacer, 2),
+        ),
+        filename: 'dump-full.json',
+      });
+      return;
+    }
+    case 'targets': {
+      const targets = await app.getTargets();
+      console.log('targets', targets);
+
+      ctx.replyWithDocument({
+        source: Buffer.from(JSON.stringify({ targets }, MAP_replacer, 2)),
+        filename: 'dump-targets.json',
+      });
+      return;
+    }
+    case 'lastdata': {
+      ctx.replyWithDocument({
+        source: Buffer.from(
+          JSON.stringify({ lastData: app.lastData }, MAP_replacer, 2),
+        ),
+        filename: 'dump-lastdata.json',
+      });
+      return;
+    }
+    default: {
+      ctx.replyWithHTML(
+        'Unknown type.\n' +
+          'Use <code>/dump full</code>\n' +
+          'Use <code>/dump targets</code>\n' +
+          'Use <code>/dump lastdata</code>',
+      );
+      return;
+    }
+  }
 });
 
 bot.command(
