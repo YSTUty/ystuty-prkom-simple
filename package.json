@@ -2,7 +2,16 @@
   "name": "ystuty-prkom-simple",
   "version": "1.0.1",
   "author": "xTCry [Vladislav Kh] (https://github.com/xTCry/)",
+  "description": "YSTUty-prkom simple telegram bot",
   "license": "MIT",
+  "repository": {
+    "url": "https://github.com/ystuty/ystuty-prkom-simple.git",
+    "type": "git"
+  },
+  "homepage": "https://github.com/ystuty/ystuty-prkom-simple#readme",
+  "bugs": {
+    "url": "https://github.com/ystuty/ystuty-prkom-simple/issues"
+  },
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "tsc -p tsconfig.json",
