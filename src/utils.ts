@@ -25,8 +25,8 @@ export function MAP_reviver(key, value) {
   return value;
 }
 
-export const greenger = (isGreen: boolean, cond2 = true) =>
-  isGreen ? (cond2 ? '🟡' : '🟢') : '🔴';
+export const greenger = (isGreen: boolean, badPosition = true) =>
+  isGreen || !badPosition ? (!isGreen || badPosition ? '🟡' : '🟢') : '🔴';
 
 export const tgKeyboard_ViewFile = (filename: string) =>
   Markup.inlineKeyboard([
