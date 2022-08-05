@@ -22,10 +22,11 @@ export type IncomingsLinkType = {
 };
 
 export type MagaAbiturientInfo = {
+  isGreen: boolean;
   position: number;
   uid: string;
   totalScore: number;
-  score2: number;
+  scoreSubjects: number;
   scoreExam: number;
   scoreInterview: number;
   scoreCompetitive: number;

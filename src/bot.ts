@@ -7,7 +7,7 @@ import * as xEnv from './environment';
 import { ITextMessageContext } from './telegraf.interface';
 import { MagaResponseInfo } from './types';
 import { redisClient } from './redis.service';
-import { MAP_replacer } from './utils';
+import { greenger, MAP_replacer } from './utils';
 
 // if (!xEnv.TELEGRAM_BOT_TOKEN) {
 //   throw new Error('TELEGRAM_BOT_TOKEN is not defined');
@@ -163,6 +163,8 @@ bot.command(
 
     for (const app of res.data) {
       const { info, item } = app;
+      const totalSeats =
+        Number(info.numbersInfo.split(': ')[1].split('.')[0]) || null;
       ctx.replyWithHTML(
         `• <b>УК: ${item.uid}</b>\n` +
           `• ${info.buildDate}\n` +
@@ -172,10 +174,13 @@ bot.command(
           `• ${info.basisAdmission}\n` +
           `• ${info.numbersInfo}\n` +
           `\n` +
-          `• Позиция: <code>${item.position}</code>\n` +
-          `• Сумма баллов: <code>${item.totalScore}</code>\n` +
-          `• Баллы за экзамен: <code>${item.scoreExam}</code>\n` +
-          `• Баллы за собес: <code>${item.scoreInterview}</code>\n`,
+          `• Позиция: <code>${item.position}</code> ${greenger(
+            item.isGreen,
+            totalSeats && item.position > totalSeats,
+          )}\n` +
+          `• Сумма баллов: <code>${item.totalScore || 'нету'}</code>\n` +
+          `• Баллы за экзамен: <code>${item.scoreExam || 'нету'}</code>\n` +
+          `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>\n`,
       );
     }
   }),

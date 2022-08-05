@@ -21,3 +21,6 @@ export function MAP_reviver(key, value) {
   }
   return value;
 }
+
+export const greenger = (isGreen: boolean, cond2 = true) =>
+  isGreen ? (cond2 ? '🟡' : '🟢') : '🔴';

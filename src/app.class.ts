@@ -5,7 +5,7 @@ import { Markup } from 'telegraf';
 import * as xEnv from './environment';
 import { bot, notifyAdmin, redisSession } from './bot';
 import { BotTarget, MagaResponseInfo } from './types';
-import { md5 } from './utils';
+import { greenger, md5 } from './utils';
 import { cacheManager } from './cache-manager.util';
 import { redisClient } from './redis.service';
 
@@ -180,6 +180,18 @@ export class App {
 
               const changes: string[] = [];
 
+              const lastTotalSeats =
+                Number(lastInfo.numbersInfo.split(': ')[1].split('.')[0]) ||
+                null;
+              const totalSeats =
+                Number(info.numbersInfo.split(': ')[1].split('.')[0]) || null;
+
+              if (lastInfo.numbersInfo !== info.numbersInfo) {
+                changes.push(
+                  `💺 <b>МЕСТА</b> изменны (было: <code>${lastInfo.numbersInfo}</code>; стало: <code>${info.numbersInfo}</code>)`,
+                );
+              }
+
               const posDif = lastItem.position - item.position;
               if (posDif !== 0) {
                 changes.push(
@@ -191,9 +203,18 @@ export class App {
                 );
               }
 
-              if (lastInfo.numbersInfo !== info.numbersInfo) {
+              if (
+                lastItem.isGreen !== item.isGreen ||
+                (lastTotalSeats && totalSeats && lastTotalSeats !== totalSeats)
+              ) {
                 changes.push(
-                  `💺 <b>МЕСТА</b> изменны (было: <code>${lastInfo.numbersInfo}</code>; стало: <code>${info.numbersInfo}</code>)`,
+                  `🚀 <b>СТАТУС</b> изменен (было: <code>${greenger(
+                    lastItem.isGreen,
+                    lastTotalSeats && lastItem.position > lastTotalSeats,
+                  )}</code>; стало: <code>${greenger(
+                    item.isGreen,
+                    totalSeats && item.position > totalSeats,
+                  )}</code>)`,
                 );
               }
 
