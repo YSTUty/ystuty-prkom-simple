@@ -18,6 +18,7 @@ export const redisSession = new TelegrafSessionRedis({
   getSessionKey: (ctx: Context) =>
     ctx.from && ctx.chat && `session:${ctx.from.id}:${ctx.chat.id}`,
 });
+const rateLimiter = new utils.RateLimiter(1, 1e3);
 
 let bot = new Telegraf(xEnv.TELEGRAM_BOT_TOKEN);
 bot.catch((e) => {
@@ -60,6 +61,16 @@ bot.use((ctx: any, next) => {
   }
 
   next();
+});
+
+bot.on('message', async (ctx, next) => {
+  const limited = await rateLimiter.take(ctx.from.id);
+
+  if (limited) {
+    await ctx.reply('Подожди пару секунд... 🥵');
+    return;
+  }
+  return await next();
 });
 
 bot.start((ctx) => {
