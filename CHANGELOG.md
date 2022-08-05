@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.1.0](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.0.2...v1.1.0) (2022-08-05)
+
+
+### 🐛 Bug Fixes
+
+* **app:** fixed redis key prefix ([d96a33f](https://github.com/ystuty/ystuty-prkom-simple/commit/d96a33f3e776f7bf66a6ed52317e1afdbff6c007))
+
+
+### 🚀 Features
+
+* added `isGreen` property to abiturient info ([c30ae66](https://github.com/ystuty/ystuty-prkom-simple/commit/c30ae66318dbf3c676e54ceeaad1b8a279d38ceb))
+* **bot:** added admin command `dump` ([389d0c3](https://github.com/ystuty/ystuty-prkom-simple/commit/389d0c31817ae576345003e15e7aecdcaf255c53))
+* **bot:** added rate limiter for bot ([04e6157](https://github.com/ystuty/ystuty-prkom-simple/commit/04e6157720df7ed9d587537c496b170beeea9c2f))
+
+
+### 🧹 Chore
+
+* **app:** removed deprecated `botTargets` ([24f8280](https://github.com/ystuty/ystuty-prkom-simple/commit/24f82804b396b17d93c9507eb31b2eb4b2c2380c))
+* **bot:** added to `info` command uid arg ([38db0c8](https://github.com/ystuty/ystuty-prkom-simple/commit/38db0c83be69e4300922bd6b16bd4dfcac78845b))
+
 ### [1.0.2](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.0.1...v1.0.2) (2022-08-04)
 
 
