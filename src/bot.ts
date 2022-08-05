@@ -7,7 +7,7 @@ import * as xEnv from './environment';
 import { ITextMessageContext } from './telegraf.interface';
 import { MagaResponseInfo } from './types';
 import { redisClient } from './redis.service';
-import { greenger, MAP_replacer } from './utils';
+import * as utils from './utils';
 
 // if (!xEnv.TELEGRAM_BOT_TOKEN) {
 //   throw new Error('TELEGRAM_BOT_TOKEN is not defined');
@@ -92,14 +92,18 @@ bot.command('dump', async (ctx) => {
     return;
   }
 
-  const [, type] = ctx.message.text.split(' ');
+  const [, type] = ctx.message.text.split(' ').filter(Boolean);
 
   switch (type?.toLowerCase()) {
     case 'full': {
       const targets = await app.getTargets();
       ctx.replyWithDocument({
         source: Buffer.from(
-          JSON.stringify({ lastData: app.lastData, targets }, MAP_replacer, 2),
+          JSON.stringify(
+            { lastData: app.lastData, targets },
+            utils.MAP_replacer,
+            2,
+          ),
         ),
         filename: 'dump-full.json',
       });
@@ -110,7 +114,7 @@ bot.command('dump', async (ctx) => {
       console.log('targets', targets);
 
       ctx.replyWithDocument({
-        source: Buffer.from(JSON.stringify({ targets }, MAP_replacer, 2)),
+        source: Buffer.from(JSON.stringify({ targets }, utils.MAP_replacer, 2)),
         filename: 'dump-targets.json',
       });
       return;
@@ -118,7 +122,7 @@ bot.command('dump', async (ctx) => {
     case 'lastdata': {
       ctx.replyWithDocument({
         source: Buffer.from(
-          JSON.stringify({ lastData: app.lastData }, MAP_replacer, 2),
+          JSON.stringify({ lastData: app.lastData }, utils.MAP_replacer, 2),
         ),
         filename: 'dump-lastdata.json',
       });
@@ -140,18 +144,21 @@ bot.command(
   'info',
   Composer.fork(async (ctx: ITextMessageContext) => {
     const target = ctx.session.uid ? ctx.session : app.botTargets[ctx.from.id];
+    const [, ...rest] = ctx.message.text.split(' ').filter(Boolean);
+    let uid = rest.join(' ') || target?.uid;
 
-    if (!target || !target.uid) {
+    if (!uid || uid.length > 16) {
       ctx.replyWithHTML(
-        `Наблюдение не установлено.\n` +
+        `Наблюдение по умолчанию не установлено.\n` +
+          `Необходимо указать корректный <i>уникальный код</i> для проверки.\n` +
+          `Например, <code>/info 123-456-789 10</code>.\n` +
+          `Указаный код не проверяется на стороне бота, поэтому нужно указать корректный, как на сайте.\n\n` +
           `Используй <code>/watch 123-456-789 10</code>, чтобы указать <i>уникальный код</i> для наблюдения.`,
       );
       return;
     }
 
-    const res = await prkomApi.get<MagaResponseInfo[]>(
-      `/admission/get/${target.uid}`,
-    );
+    const res = await prkomApi.get<MagaResponseInfo[]>(`/admission/get/${uid}`);
 
     if (res.data.length === 0) {
       ctx.replyWithHTML(
@@ -167,30 +174,31 @@ bot.command(
         Number(info.numbersInfo.split(': ')[1].split('.')[0]) || null;
       ctx.replyWithHTML(
         `• <b>УК: ${item.uid}</b>\n` +
-          `• ${info.buildDate}\n` +
-          `• ${info.competitionGroupName}\n` +
-          `• ${info.formTraining}\n` +
-          `• ${info.levelTraining}\n` +
-          `• ${info.basisAdmission}\n` +
-          `• ${info.numbersInfo}\n` +
+          `• ${utils.taggerSmart(info.buildDate)}\n` +
+          `• ${utils.taggerSep(info.competitionGroupName)}\n` +
+          `• ${utils.taggerSmart(info.formTraining)}\n` +
+          `• ${utils.taggerSmart(info.levelTraining)}\n` +
+          `• ${utils.taggerSmart(info.basisAdmission)}\n` +
+          `• ${utils.taggerSmart(info.numbersInfo)}\n` +
           `\n` +
-          `• Позиция: <code>${item.position}</code> ${greenger(
+          `• Позиция: <code>${item.position}</code> ${utils.greenger(
             item.isGreen,
             totalSeats && item.position > totalSeats,
           )}\n` +
           `• Сумма баллов: <code>${item.totalScore || 'нету'}</code>\n` +
           `• Баллы за экзамен: <code>${item.scoreExam || 'нету'}</code>\n` +
           `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>\n`,
+        utils.tgKeyboard_ViewFile(app.filename),
       );
     }
   }),
 );
 
 bot.command('watch', (ctx: ITextMessageContext) => {
-  const [, ...rest] = ctx.message.text.split(' ');
+  const [, ...rest] = ctx.message.text.split(' ').filter(Boolean);
   const uid = rest.join(' ');
 
-  if (uid.length === 0 || uid.length > 20) {
+  if (uid.length === 0 || uid.length > 16) {
     ctx.replyWithHTML(
       `Необходимо указать корректный <i>уникальный код</i> для наблюдения.\n` +
         `Например, <code>/watch 123-456-789 10</code>.\n` +

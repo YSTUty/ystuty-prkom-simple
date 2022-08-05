@@ -5,7 +5,7 @@ import { Markup } from 'telegraf';
 import * as xEnv from './environment';
 import { bot, notifyAdmin, redisSession } from './bot';
 import { BotTarget, MagaResponseInfo } from './types';
-import { greenger, md5 } from './utils';
+import { greenger, md5, tgKeyboard_ViewFile } from './utils';
 import { cacheManager } from './cache-manager.util';
 import { redisClient } from './redis.service';
 
@@ -261,18 +261,7 @@ export class App {
                           `${changes.join('\n')}`,
                         {
                           parse_mode: 'HTML',
-                          ...Markup.inlineKeyboard([
-                            ...[
-                              app.filename
-                                ? [
-                                    Markup.button.url(
-                                      'Посмотреть на сайте',
-                                      `${xEnv.YSTU_URL}/files/prkom_svod/${app.filename}`,
-                                    ),
-                                  ]
-                                : [],
-                            ],
-                          ]),
+                          ...tgKeyboard_ViewFile(app.filename),
                         },
                       )
                       .catch(console.error);
