@@ -18,9 +18,6 @@ export const prkomApi = axios.create({
 const CACHEFILE_LAST_DAT = 'app_setting';
 
 export class App {
-  /** @deprecated Use redis session */
-  public botTargets: Record<number, Partial<BotTarget>> = {};
-
   public lastData = new Map<string, Map<string, MagaResponseInfo>>();
 
   public async init() {
@@ -101,27 +98,12 @@ export class App {
     if (lastData && lastData instanceof Map) {
       this.lastData = lastData;
     }
-
-    // TODO: remove it
-    // ! for support old version
-    if (botTargets && botTargets instanceof Map) {
-      for (const [k, v] of botTargets.entries()) {
-        if (v.id) {
-          this.botTargets[v.id] = { ...v, uid: k };
-        }
-      }
-    } else {
-      this.botTargets = botTargets;
-    }
   }
 
   public async save() {
     await cacheManager.update(
       CACHEFILE_LAST_DAT,
-      {
-        lastData: this.lastData,
-        botTargets: this.botTargets,
-      },
+      { lastData: this.lastData },
       9e12,
     );
   }
@@ -131,7 +113,7 @@ export class App {
       console.log(new Date().toLocaleString(), '[runWatcher] execute');
 
       const targets = await this.getTargets();
-      const targetEntries = Object.entries({ ...this.botTargets, ...targets });
+      const targetEntries = Object.entries(targets);
       const targetUids = targetEntries.flatMap(([, v]) => v.uid);
 
       const uids = _.uniq(

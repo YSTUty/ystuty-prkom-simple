@@ -36,10 +36,6 @@ bot.telegram.setMyCommands([
 
 bot.use(redisSession.middleware());
 bot.use((ctx: any, next) => {
-  // !
-  const oldValues = app.botTargets[ctx.from.id];
-  delete app.botTargets[ctx.from.id];
-
   if (!ctx.session.chatId) {
     notifyAdmin(
       `<b>[DEBUG]</b> New user: <code>${ctx.from.id}</code> <code>@${ctx.from.username}</code>`,
@@ -47,7 +43,6 @@ bot.use((ctx: any, next) => {
   }
 
   const toSession = {
-    ...oldValues,
     chatId: ctx.from.id,
     first_name: ctx.from.first_name,
     last_name: ctx.from.last_name,
@@ -154,9 +149,8 @@ bot.command('dump', async (ctx) => {
 bot.command(
   'info',
   Composer.fork(async (ctx: ITextMessageContext) => {
-    const target = ctx.session.uid ? ctx.session : app.botTargets[ctx.from.id];
     const [, ...rest] = ctx.message.text.split(' ').filter(Boolean);
-    let uid = rest.join(' ') || target?.uid;
+    let uid = rest.join(' ') || ctx.session.uid;
 
     if (!uid || uid.length > 16) {
       ctx.replyWithHTML(
@@ -218,20 +212,10 @@ bot.command('watch', (ctx: ITextMessageContext) => {
     return;
   }
 
-  if (!app.botTargets[ctx.from.id]) {
-    app.botTargets[ctx.from.id] = {
-      chatId: ctx.chat.id,
-      loadCount: 0,
-      uid,
-    };
-  }
-
   if (ctx.session.uid !== uid || !ctx.session.loadCount) {
     ctx.session.loadCount = 0;
-    app.botTargets[ctx.from.id].loadCount = 0;
   }
   ctx.session.uid = uid;
-  app.botTargets[ctx.from.id].uid = uid;
 
   ctx.replyWithHTML(`Добавлено в наблюдение: <code>${uid}</code>`);
 });
