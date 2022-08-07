@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.1](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.1.0...v1.1.1) (2022-08-07)
+
+
+### 🧹 Chore
+
+* updated `greenger` conditions ([9e9c63b](https://github.com/ystuty/ystuty-prkom-simple/commit/9e9c63b3ec964a4ab73ae8de8bc638900f1c9580))
+
+
+### 🐛 Bug Fixes
+
+* **bot:** fixed saving session ([1f024e7](https://github.com/ystuty/ystuty-prkom-simple/commit/1f024e7ec6e1aa91aec7a0bbfa9d90f4ef1f614f))
+
+
+### 🚀 Features
+
+* **app:** updated to new api response params ([6780120](https://github.com/ystuty/ystuty-prkom-simple/commit/67801208fe2a8ec5851465c25262a00e29c76d70))
+
 ## [1.1.0](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.0.2...v1.1.0) (2022-08-05)
 
 
