@@ -21,6 +21,25 @@ export type IncomingsLinkType = {
   }[];
 };
 
+export enum AbiturientInfoStateType {
+  Unknown = 0,
+  Submitted = 1,
+}
+
+export enum FormTrainingType {
+  Unknown = 0,
+  FullTime = 1,
+  Extramural = 2,
+  PartTime = 3,
+}
+
+export enum LevelTrainingType {
+  Unknown = 0,
+  Bachelor = 1,
+  Magister = 2,
+  Postgraduate = 3,
+}
+
 export type MagaAbiturientInfo = {
   isGreen: boolean;
   position: number;
@@ -35,9 +54,10 @@ export type MagaAbiturientInfo = {
   original: boolean;
   originalToUniversity: boolean;
   consentToanotherDirection: boolean;
+  state: AbiturientInfoStateType | null;
 };
 
-export type MagaInfoType = {
+export type MagaOriginalInfoType = {
   buildDate: string;
   prkomDate: string;
   competitionGroupName: string;
@@ -49,12 +69,45 @@ export type MagaInfoType = {
   numbersInfo: string;
 };
 
+export type MagaInfoType = {
+  buildDate: Date;
+  prkom: {
+    number: number;
+    date: Date;
+  };
+  competitionGroupName: string;
+  formTraining: number;
+  levelTraining: number;
+  directionTraining: {
+    code: string;
+    name: string;
+  };
+  basisAdmission: string;
+  sourceFunding: string;
+  numbersInfo: { total: number; enrolled: number; toenroll: number };
+};
+
 export type MagaResponseInfo = {
   isCache: any;
   info: MagaInfoType;
+  originalInfo: MagaOriginalInfoType;
+  item: MagaAbiturientInfo;
+  filename: string;
+  payload: {
+    afterGreens: number;
+    beforeGreens: number;
+    totalItems: number;
+  };
+};
+
+export type LastMagaInfo = {
+  isCache: any;
+  info: MagaInfoType | MagaOriginalInfoType;
   item: MagaAbiturientInfo;
   filename: string;
 };
+
+// 
 
 export type BotTarget = {
   chatId: number;

@@ -163,7 +163,9 @@ bot.command(
       return;
     }
 
-    const res = await prkomApi.get<MagaResponseInfo[]>(`/admission/get/${uid}`);
+    const res = await prkomApi.get<MagaResponseInfo[]>(
+      `/admission/get/${uid}?original=true`,
+    );
 
     if (res.data.length === 0) {
       ctx.replyWithHTML(
@@ -174,25 +176,32 @@ bot.command(
     }
 
     for (const app of res.data) {
-      const { info, item } = app;
-      const totalSeats =
-        Number(info.numbersInfo.split(': ')[1].split('.')[0]) || null;
-      ctx.replyWithHTML(
-        `• <b>УК: ${item.uid}</b>\n` +
-          `• ${utils.taggerSmart(info.buildDate)}\n` +
-          `• ${utils.taggerSep(info.competitionGroupName)}\n` +
-          `• ${utils.taggerSmart(info.formTraining)}\n` +
-          `• ${utils.taggerSmart(info.levelTraining)}\n` +
-          `• ${utils.taggerSmart(info.basisAdmission)}\n` +
-          `• ${utils.taggerSmart(info.numbersInfo)}\n` +
-          `\n` +
-          `• Позиция: <code>${item.position}</code> ${utils.greenger(
-            item.isGreen,
-            totalSeats && item.position > totalSeats,
-          )}\n` +
-          `• Сумма баллов: <code>${item.totalScore || 'нету'}</code>\n` +
-          `• Баллы за экзамен: <code>${item.scoreExam || 'нету'}</code>\n` +
-          `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>\n`,
+      const { info, originalInfo, item, payload } = app;
+      const totalSeats = info.numbersInfo.total || null;
+      const message = [
+        `• <b>УК: ${item.uid}</b>`,
+        `• ${utils.taggerSmart(originalInfo.buildDate)}`,
+        `• ${utils.taggerSep(originalInfo.competitionGroupName)}`,
+        `• ${utils.taggerSmart(originalInfo.formTraining)}`,
+        `• ${utils.taggerSmart(originalInfo.levelTraining)}`,
+        `• ${utils.taggerSmart(originalInfo.basisAdmission)}`,
+        `• ${utils.taggerSmart(originalInfo.numbersInfo)}`,
+        ``,
+        `• Позиция: <code>${
+          item.position
+        }/${totalSeats}</code> ${utils.greenger(
+          item.isGreen,
+          totalSeats && totalSeats - payload.beforeGreens < 1,
+        )}`,
+        `• Сумма баллов: <code>${item.totalScore || 'нету'}</code>`,
+        `• Баллы за экзамен: <code>${item.scoreExam || 'нету'}</code>`,
+        `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>`,
+        ``,
+        `• До проходит: <code>${payload.beforeGreens}</code> чел.`,
+        `• После проходит: <code>${payload.afterGreens}</code> чел.`,
+      ];
+      await ctx.replyWithHTML(
+        message.join('\n'),
         utils.tgKeyboard_ViewFile(app.filename),
       );
     }

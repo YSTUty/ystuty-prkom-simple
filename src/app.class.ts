@@ -1,10 +1,9 @@
 import axios from 'axios';
 import * as _ from 'lodash';
-import { Markup } from 'telegraf';
 
 import * as xEnv from './environment';
 import { bot, notifyAdmin, redisSession } from './bot';
-import { BotTarget, MagaResponseInfo } from './types';
+import { BotTarget, LastMagaInfo, MagaResponseInfo } from './types';
 import { greenger, md5, tgKeyboard_ViewFile } from './utils';
 import { cacheManager } from './cache-manager.util';
 import { redisClient } from './redis.service';
@@ -18,7 +17,7 @@ export const prkomApi = axios.create({
 const CACHEFILE_LAST_DAT = 'app_setting';
 
 export class App {
-  public lastData = new Map<string, Map<string, MagaResponseInfo>>();
+  public lastData = new Map<string, Map<string, LastMagaInfo>>();
 
   public async init() {
     await this.load();
@@ -122,7 +121,7 @@ export class App {
       for (const uid of uids) {
         try {
           const { data: list } = await prkomApi.get<MagaResponseInfo[]>(
-            `/admission/get/${uid}`,
+            `/admission/get/${uid}?original=true`,
           );
 
           if (list.length === 0) {
@@ -138,22 +137,23 @@ export class App {
           }
 
           if (!this.lastData.has(uid)) {
-            const apps = new Map<string, MagaResponseInfo>();
+            const apps = new Map<string, LastMagaInfo>();
             this.lastData.set(uid, apps);
           }
 
           for (const app of list) {
-            const { info, item } = app;
+            const { originalInfo, info, item } = app;
 
             const apps = this.lastData.get(uid);
+            // TODO: use hashName = md5(app.filename);
             const hashName = md5(
               [
-                info.competitionGroupName,
-                info.formTraining,
-                info.levelTraining,
-                info.directionTraining,
-                info.basisAdmission,
-                info.sourceFunding,
+                originalInfo.competitionGroupName,
+                originalInfo.formTraining,
+                originalInfo.levelTraining,
+                originalInfo.directionTraining,
+                originalInfo.basisAdmission,
+                originalInfo.sourceFunding,
               ].join(';'),
             );
 
@@ -163,14 +163,43 @@ export class App {
               const changes: string[] = [];
 
               const lastTotalSeats =
-                Number(lastInfo.numbersInfo.split(': ')[1].split('.')[0]) ||
-                null;
-              const totalSeats =
-                Number(info.numbersInfo.split(': ')[1].split('.')[0]) || null;
+                // ! TODO: for compatibility (remove in next version)
+                typeof lastInfo.numbersInfo === 'string'
+                  ? Number(lastInfo.numbersInfo.split(': ')[1].split('.')[0])
+                  : lastInfo.numbersInfo.total || null;
+              const totalSeats = info.numbersInfo.total || null;
 
-              if (lastInfo.numbersInfo !== info.numbersInfo) {
+              // ! TODO: for compatibility (remove in next version)
+              if (typeof lastInfo.numbersInfo === 'string') {
+                if (lastInfo.numbersInfo !== originalInfo.numbersInfo) {
+                  changes.push(
+                    `💺 <b>МЕСТА</b> изменны (было: <code>${
+                      lastInfo.numbersInfo
+                    }</code>; стало: <code>${JSON.stringify(
+                      info.numbersInfo,
+                    )}</code>)`,
+                  );
+                }
+              } else if (
+                lastInfo.numbersInfo.total !== info.numbersInfo.total
+              ) {
                 changes.push(
-                  `💺 <b>МЕСТА</b> изменны (было: <code>${lastInfo.numbersInfo}</code>; стало: <code>${info.numbersInfo}</code>)`,
+                  `💺 <b>МЕСТА</b> изменны (было всего мест: <code>${lastInfo.numbersInfo.total}</code>;` +
+                    ` стало всего мест: <code>${info.numbersInfo.total}</code>)`,
+                );
+              } else if (
+                lastInfo.numbersInfo.enrolled !== info.numbersInfo.enrolled
+              ) {
+                changes.push(
+                  `💺 <b>МЕСТА</b> изменны (было зачислено: <code>${lastInfo.numbersInfo.enrolled}</code>;` +
+                    ` стало зачислено: <code>${info.numbersInfo.enrolled}</code>)`,
+                );
+              } else if (
+                lastInfo.numbersInfo.toenroll !== info.numbersInfo.toenroll
+              ) {
+                changes.push(
+                  `💺 <b>МЕСТА</b> изменны (было к зачислению: <code>${lastInfo.numbersInfo.toenroll}</code>;` +
+                    ` стало к зачислению: <code>${info.numbersInfo.toenroll}</code>)`,
                 );
               }
 
@@ -235,10 +264,10 @@ export class App {
                         chatId,
                         `🦄 <b>(CHANGES DETECTED)</b>\n` +
                           `Уникальный код: [<code>${uid}</code>]\n` +
-                          `<b>• ${info.competitionGroupName}</b>\n` +
-                          `<b>• ${info.formTraining}</b>\n` +
-                          `<b>• ${info.buildDate}</b>\n` +
-                          `<b>• ${info.numbersInfo}</b>\n` +
+                          `<b>• ${originalInfo.competitionGroupName}</b>\n` +
+                          `<b>• ${originalInfo.formTraining}</b>\n` +
+                          `<b>• ${originalInfo.buildDate}</b>\n` +
+                          `<b>• ${originalInfo.numbersInfo}</b>\n` +
                           `\nИзменения:\n` +
                           `${changes.join('\n')}`,
                         {
@@ -258,6 +287,7 @@ export class App {
               }
             }
 
+            delete app.originalInfo;
             // update last data
             apps.set(hashName, app);
           }
