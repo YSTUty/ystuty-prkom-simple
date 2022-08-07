@@ -55,7 +55,7 @@ bot.use((ctx: any, next) => {
     }
   }
 
-  next();
+  return next();
 });
 
 bot.on('message', async (ctx, next) => {
