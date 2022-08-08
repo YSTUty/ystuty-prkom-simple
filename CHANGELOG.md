@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.1.1...v1.2.0) (2022-08-08)
+
+
+### 🧹 Chore
+
+* **app:** removed compability `info` ([10fdccf](https://github.com/ystuty/ystuty-prkom-simple/commit/10fdccfe64d696d1c63ccc5e6fc96cdfdfce527a))
+
+
+### 🚀 Features
+
+* **bot:** displaying has `original` ([e7549a5](https://github.com/ystuty/ystuty-prkom-simple/commit/e7549a5b339e6c9494bbc3a6f99f26e177fa6baa))
+
 ### [1.1.1](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.1.0...v1.1.1) (2022-08-07)
 
 
