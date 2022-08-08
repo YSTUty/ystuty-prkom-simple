@@ -162,27 +162,10 @@ export class App {
 
               const changes: string[] = [];
 
-              const lastTotalSeats =
-                // ! TODO: for compatibility (remove in next version)
-                typeof lastInfo.numbersInfo === 'string'
-                  ? Number(lastInfo.numbersInfo.split(': ')[1].split('.')[0])
-                  : lastInfo.numbersInfo.total || null;
+              const lastTotalSeats = lastInfo.numbersInfo.total || null;
               const totalSeats = info.numbersInfo.total || null;
 
-              // ! TODO: for compatibility (remove in next version)
-              if (typeof lastInfo.numbersInfo === 'string') {
-                if (lastInfo.numbersInfo !== originalInfo.numbersInfo) {
-                  changes.push(
-                    `💺 <b>МЕСТА</b> изменны (было: <code>${
-                      lastInfo.numbersInfo
-                    }</code>; стало: <code>${JSON.stringify(
-                      info.numbersInfo,
-                    )}</code>)`,
-                  );
-                }
-              } else if (
-                lastInfo.numbersInfo.total !== info.numbersInfo.total
-              ) {
+              if (lastInfo.numbersInfo.total !== info.numbersInfo.total) {
                 changes.push(
                   `💺 <b>МЕСТА</b> изменны (было всего мест: <code>${lastInfo.numbersInfo.total}</code>;` +
                     ` стало всего мест: <code>${info.numbersInfo.total}</code>)`,

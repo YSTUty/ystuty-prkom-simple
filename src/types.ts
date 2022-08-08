@@ -102,7 +102,7 @@ export type MagaResponseInfo = {
 
 export type LastMagaInfo = {
   isCache: any;
-  info: MagaInfoType | MagaOriginalInfoType;
+  info: MagaInfoType;
   item: MagaAbiturientInfo;
   filename: string;
 };
