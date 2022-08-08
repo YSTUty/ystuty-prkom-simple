@@ -196,6 +196,7 @@ bot.command(
         `• Сумма баллов: <code>${item.totalScore || 'нету'}</code>`,
         `• Баллы за экзамен: <code>${item.scoreExam || 'нету'}</code>`,
         `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>`,
+        `• Оригинал: <code>${item.original ? '✅' : '✖️'}</code>`,
         ``,
         `• До проходит: <code>${payload.beforeGreens}</code> чел.`,
         `• После проходит: <code>${payload.afterGreens}</code> чел.`,
