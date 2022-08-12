@@ -107,7 +107,7 @@ export type LastMagaInfo = {
   filename: string;
 };
 
-// 
+//
 
 export type BotTarget = {
   chatId: number;
@@ -117,5 +117,6 @@ export type BotTarget = {
 
   loadCount?: number;
   uid?: string;
+  powerOff?: boolean;
   // uids: string[];
 };

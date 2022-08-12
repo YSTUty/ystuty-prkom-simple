@@ -32,6 +32,7 @@ bot.telegram.setMyCommands([
   { command: 'start', description: 'Show menu' },
   { command: 'info', description: 'Show my info' },
   { command: 'watch', description: 'Set watcher' },
+  { command: 'stop', description: 'Stop watcher' },
 ]);
 
 bot.use(redisSession.middleware());
@@ -226,8 +227,19 @@ bot.command('watch', (ctx: ITextMessageContext) => {
     ctx.session.loadCount = 0;
   }
   ctx.session.uid = uid;
+  delete ctx.session.powerOff;
 
   ctx.replyWithHTML(`Добавлено в наблюдение: <code>${uid}</code>`);
+});
+
+bot.command('stop', (ctx: ITextMessageContext) => {
+  if (!ctx.session.uid) {
+    ctx.replyWithHTML(`Наблюдение не было установлено`);
+    return;
+  }
+
+  ctx.session.powerOff = true;
+  ctx.replyWithHTML(`Наблюдение остановлено`);
 });
 
 export const notifyAdmin = async (

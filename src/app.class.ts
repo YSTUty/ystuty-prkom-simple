@@ -236,7 +236,7 @@ export class App {
                     [
                       xEnv.TELEGRAM_CHAT_ID,
                       ...targetEntries.map(
-                        ([chatId, v]) => v.uid === uid && chatId,
+                        ([chatId, v]) => v.uid === uid && !v.powerOff && chatId,
                       ),
                     ].filter(Boolean),
                   );
