@@ -24,6 +24,7 @@ export type IncomingsLinkType = {
 export enum AbiturientInfoStateType {
   Unknown = 0,
   Submitted = 1,
+  Enrolled = 2,
 }
 
 export enum FormTrainingType {

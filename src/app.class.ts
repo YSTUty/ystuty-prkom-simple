@@ -3,7 +3,12 @@ import * as _ from 'lodash';
 
 import * as xEnv from './environment';
 import { bot, notifyAdmin, redisSession } from './bot';
-import { BotTarget, LastMagaInfo, MagaResponseInfo } from './types';
+import {
+  AbiturientInfoStateType,
+  BotTarget,
+  LastMagaInfo,
+  MagaResponseInfo,
+} from './types';
 import { greenger, md5, tgKeyboard_ViewFile } from './utils';
 import { cacheManager } from './cache-manager.util';
 import { redisClient } from './redis.service';
@@ -160,6 +165,7 @@ export class App {
             if (apps.has(hashName)) {
               const { info: lastInfo, item: lastItem } = apps.get(hashName);
 
+              let isNewEnrolled = false;
               const changes: string[] = [];
 
               const lastTotalSeats = lastInfo.numbersInfo.total || null;
@@ -186,6 +192,22 @@ export class App {
                 );
               }
 
+              if (lastItem.state !== item.state) {
+                changes.push(
+                  `❇️ <b>Состояние</b> изменено (было: <code>${
+                    AbiturientInfoStateType[lastItem.state]
+                  }</code>; стало: <code>${
+                    AbiturientInfoStateType[item.state]
+                  }</code>)`,
+                );
+                if (
+                  item.state === AbiturientInfoStateType.Enrolled ||
+                  item.state === AbiturientInfoStateType.Unknown
+                ) {
+                  isNewEnrolled = true;
+                }
+              }
+
               const posDif = lastItem.position - item.position;
               if (posDif !== 0) {
                 changes.push(
@@ -198,8 +220,13 @@ export class App {
               }
 
               if (
-                lastItem.isGreen !== item.isGreen ||
-                (lastTotalSeats && totalSeats && lastTotalSeats !== totalSeats)
+                !isNewEnrolled &&
+                // ! TOOD: for competition (null)
+                ((lastItem.isGreen !== null &&
+                  lastItem.isGreen !== item.isGreen) ||
+                  (lastTotalSeats &&
+                    totalSeats &&
+                    lastTotalSeats !== totalSeats))
               ) {
                 changes.push(
                   `🚀 <b>СТАТУС</b> изменен (было: <code>${greenger(
@@ -207,7 +234,7 @@ export class App {
                     lastTotalSeats && lastItem.position > lastTotalSeats,
                   )}</code>; стало: <code>${greenger(
                     item.isGreen,
-                    totalSeats && item.position > totalSeats,
+                    totalSeats && totalSeats - app.payload.beforeGreens < 1,
                   )}</code>)`,
                 );
               }
@@ -246,7 +273,7 @@ export class App {
                       .sendMessage(
                         chatId,
                         `🦄 <b>(CHANGES DETECTED)</b>\n` +
-                          `Уникальный код: [<code>${uid}</code>]\n` +
+                          `УК: [<code>${uid}</code>]\n` +
                           `<b>• ${originalInfo.competitionGroupName}</b>\n` +
                           `<b>• ${originalInfo.formTraining}</b>\n` +
                           `<b>• ${originalInfo.buildDate}</b>\n` +
@@ -258,6 +285,22 @@ export class App {
                           ...tgKeyboard_ViewFile(app.filename),
                         },
                       )
+                      .then(() => {
+                        if (isNewEnrolled) {
+                          bot.telegram.sendMessage(chatId, `🎉`).then((e) => {
+                            bot.telegram.sendMessage(
+                              chatId,
+                              `🦄 <b>(HAPPY)</b>\n` +
+                                `УК: [<code>${uid}</code>]\n` +
+                                `🎉 Поздравляем с зачилением!`,
+                              {
+                                parse_mode: 'HTML',
+                                reply_to_message_id: e.message_id,
+                              },
+                            );
+                          });
+                        }
+                      })
                       .catch(console.error);
                   }
                 }
