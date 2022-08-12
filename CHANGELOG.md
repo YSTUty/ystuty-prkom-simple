@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.2.1](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.2.0...v1.2.1) (2022-08-12)
+
+
+### 🚀 Features
+
+* **app:** added `Enrolled` type for abiturient info state ([e628bb4](https://github.com/ystuty/ystuty-prkom-simple/commit/e628bb4f48864c7a94748890203a89bcfe61225b))
+* **bot:** added `stop` command ([a7b4716](https://github.com/ystuty/ystuty-prkom-simple/commit/a7b4716a9cd1afa3ef2f19951d042450bfb03860))
+
 ## [1.2.0](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.1.1...v1.2.0) (2022-08-08)
 
 
