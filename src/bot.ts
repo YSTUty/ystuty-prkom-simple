@@ -4,8 +4,7 @@ import { ExtraReplyMessage } from 'telegraf/typings/telegram-types';
 
 import { app, prkomApi } from './app.class';
 import * as xEnv from './environment';
-import { ITextMessageContext } from './telegraf.interface';
-import { MagaResponseInfo } from './types';
+import { ITextMessageContext, MagaResponseInfo } from './interfaces';
 import { redisClient } from './redis.service';
 import * as utils from './utils';
 
@@ -70,19 +69,40 @@ bot.on('message', async (ctx, next) => {
 });
 
 bot.start((ctx) => {
+  const newUidRegexp = /uid\-\-(?<uid>[0-9]{3}\-[0-9]{3}-[0-9]{3}[ _][0-9]{2})/;
+  let newUid: string = null;
+  if (ctx.startPayload) {
+    let res = ctx.startPayload.match(newUidRegexp)?.groups;
+    if (res) {
+      newUid = res.uid.replace(/_/, ' ');
+    }
+  }
+
+  let prkomLink = 'https://www.ystu.ru/files/prkom_svod/';
+
   const { npm_package_homepage } = process.env;
   ctx.replyWithHTML(
-    `Привет! 👋\n` +
-      `Бот позволяет подписаться на уведомления об изменениях в списках поступающих в ЯГТУ.\n\n` +
-      `• Используй <code>/watch 123-456-789 10</code>, чтобы указать <i>уникальный код</i> для наблюдения.\n` +
-      `• Используй /info, чтобы узнать текущее состояние.\n\n` +
-      `Информация об обновлениях бота в <a href="https://vk.com/ystuty">группе VK YSTUty</a>\n\n` +
-      `<code>v${process.env.npm_package_version}</code>` +
-      (!npm_package_homepage
-        ? ''
-        : `\n<a href="${npm_package_homepage}">Перейти в репозиторий</a>`),
+    [
+      `Привет! 👋`,
+      `Бот позволяет подписаться на уведомления об изменениях в <a href="${prkomLink}">списках поступающих ЯГТУ</a>.`,
+      ``,
+      `• Используй <code>/watch 123-456-789 10</code>, чтобы указать <i>уникальный код</i> для наблюдения.`,
+      `• Используй /info, чтобы узнать текущее состояние.`,
+      ``,
+      `Информация об обновлениях бота в <a href="https://vk.com/ystuty">группе VK YSTUty</a>`,
+      ``,
+      `<code>v${process.env.npm_package_version}</code>`,
+      ...(npm_package_homepage
+        ? [`<a href="${npm_package_homepage}">View source code on GitHub</a>`]
+        : []),
+    ].join('\n'),
     { disable_web_page_preview: true },
   );
+
+  // TODO: make it
+  // if (newUid) {
+  //   ctx.replyWithHTML(`New uid: ${newUid}`);
+  // }
 });
 
 bot.command('app', (ctx) => {
@@ -180,7 +200,8 @@ bot.command(
       const { info, originalInfo, item, payload } = app;
       const totalSeats = info.numbersInfo.total || null;
       const message = [
-        `• <b>УК: ${item.uid}</b>`,
+        `<b>УК</b>: [<code>${item.uid}</code>]`,
+        ``,
         `• ${utils.taggerSmart(originalInfo.buildDate)}`,
         `• ${utils.taggerSep(originalInfo.competitionGroupName)}`,
         `• ${utils.taggerSmart(originalInfo.formTraining)}`,
@@ -196,11 +217,16 @@ bot.command(
         )}`,
         `• Сумма баллов: <code>${item.totalScore || 'нету'}</code>`,
         `• Баллы за экзамен: <code>${item.scoreExam || 'нету'}</code>`,
-        `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>`,
-        `• Оригинал: <code>${item.original ? '✅' : '✖️'}</code>`,
-        ``,
-        `• До проходит: <code>${payload.beforeGreens}</code> чел.`,
-        `• После проходит: <code>${payload.afterGreens}</code> чел.`,
+        // `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>`,
+        `• Оригинал: <code>${item.originalToUniversity ? '✅' : '✖️'}</code>`,
+        `• Приоритет: <code>${item.priority}/${item.priorityHight}</code>`,
+        payload.beforeGreens + payload.afterGreens > 0
+          ? [
+              ``,
+              `• До проходит: <code>${payload.beforeGreens}</code> чел.`,
+              `• После проходит: <code>${payload.afterGreens}</code> чел.`,
+            ]
+          : [],
       ];
       await ctx.replyWithHTML(
         message.join('\n'),

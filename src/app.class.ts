@@ -8,7 +8,7 @@ import {
   BotTarget,
   LastMagaInfo,
   MagaResponseInfo,
-} from './types';
+} from './interfaces';
 import { greenger, md5, tgKeyboard_ViewFile } from './utils';
 import { cacheManager } from './cache-manager.util';
 import { redisClient } from './redis.service';
@@ -245,11 +245,11 @@ export class App {
                 );
               }
 
-              if (lastItem.scoreInterview !== item.scoreInterview) {
-                changes.push(
-                  `⭐️ <b>БАЛЛЫ СОБЕСА</b> изменены (было: <code>${lastItem.scoreInterview}</code>; стало: <code>${item.scoreInterview}</code>)`,
-                );
-              }
+              // if (lastItem.scoreInterview !== item.scoreInterview) {
+              //   changes.push(
+              //     `⭐️ <b>БАЛЛЫ СОБЕСА</b> изменены (было: <code>${lastItem.scoreInterview}</code>; стало: <code>${item.scoreInterview}</code>)`,
+              //   );
+              // }
 
               if (lastItem.scoreExam !== item.scoreExam) {
                 changes.push(
@@ -272,14 +272,18 @@ export class App {
                     bot.telegram
                       .sendMessage(
                         chatId,
-                        `🦄 <b>(CHANGES DETECTED)</b>\n` +
-                          `УК: [<code>${uid}</code>]\n` +
-                          `<b>• ${originalInfo.competitionGroupName}</b>\n` +
-                          `<b>• ${originalInfo.formTraining}</b>\n` +
-                          `<b>• ${originalInfo.buildDate}</b>\n` +
-                          `<b>• ${originalInfo.numbersInfo}</b>\n` +
-                          `\nИзменения:\n` +
-                          `${changes.join('\n')}`,
+                        `${[
+                          `🦄 <b>(CHANGES DETECTED)</b>`,
+                          `<b>УК</b>: [<code>${uid}</code>]`,
+                          ``,
+                          `<b>• ${originalInfo.competitionGroupName}</b>`,
+                          `<b>• ${originalInfo.formTraining}</b>`,
+                          `<b>• ${originalInfo.buildDate}</b>`,
+                          `<b>• ${originalInfo.numbersInfo}</b>`,
+                          ``,
+                          `Изменения:`,
+                          ...changes,
+                        ].join('\n')}`,
                         {
                           parse_mode: 'HTML',
                           ...tgKeyboard_ViewFile(app.filename),

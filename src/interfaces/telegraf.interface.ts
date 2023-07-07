@@ -9,7 +9,7 @@ import * as tg from 'telegraf/typings/core/types/typegram';
 import { Deunionize } from 'telegraf/typings/deunionize';
 import { MountMap } from 'telegraf/typings/telegram-types';
 
-import { BotTarget } from './types';
+import { BotTarget } from './app.interface';
 
 type ISessionState = {} & BotTarget;
 
