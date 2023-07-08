@@ -6,8 +6,8 @@ import { bot, notifyAdmin, redisSession } from './bot';
 import {
   AbiturientInfoStateType,
   BotTarget,
-  LastMagaInfo,
-  MagaResponseInfo,
+  LastAbiturientInfo,
+  AbiturientInfoResponse,
   NotifyType,
 } from './interfaces';
 import { cacheManager } from './cache-manager.util';
@@ -24,7 +24,7 @@ export const prkomApi = axios.create({
 const CACHEFILE_LAST_DAT = 'app_setting';
 
 export class App {
-  public lastData = new Map<string, Map<string, LastMagaInfo>>();
+  public lastData = new Map<string, Map<string, LastAbiturientInfo>>();
 
   public async init() {
     await this.load();
@@ -127,8 +127,9 @@ export class App {
       );
       for (const uid of uids) {
         try {
-          const { data: list } = await prkomApi.get<MagaResponseInfo[]>(
-            `/admission/get/${uid}?original=true`,
+          const { data: list } = await prkomApi.get<AbiturientInfoResponse[]>(
+            `/v1/admission/get/${uid}?original=true`,
+            // `/v1/admission/get/fake?original=true`,
           );
 
           if (list.length === 0) {
@@ -144,7 +145,7 @@ export class App {
           }
 
           if (!this.lastData.has(uid)) {
-            const apps = new Map<string, LastMagaInfo>();
+            const apps = new Map<string, LastAbiturientInfo>();
             this.lastData.set(uid, apps);
           }
 
@@ -266,7 +267,11 @@ export class App {
               //   );
               // }
 
-              if (lastItem.scoreExam !== item.scoreExam) {
+              if (
+                'scoreExam' in lastItem &&
+                'scoreExam' in item &&
+                lastItem.scoreExam !== item.scoreExam
+              ) {
                 isImportant = true;
                 changes.push(
                   `❇️ <b>БАЛЛЫ ЭКЗА</b> изменены (было: <code>${lastItem.scoreExam}</code>; стало: <code>${item.scoreExam}</code>)`,

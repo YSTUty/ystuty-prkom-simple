@@ -1,14 +1,14 @@
 import {
-  MagaInfoType,
-  MagaOriginalInfoType,
-  MagaAbiturientInfo,
+  IncomingsPageInfo,
+  IncomingsPageOriginalInfo,
+  AbiturientInfo,
 } from './prkom.interface';
 
-export type MagaResponseInfo = {
+export type AbiturientInfoResponse = {
   isCache: any;
-  info: MagaInfoType;
-  originalInfo: MagaOriginalInfoType;
-  item: MagaAbiturientInfo;
+  info: IncomingsPageInfo;
+  originalInfo: IncomingsPageOriginalInfo;
+  item: AbiturientInfo;
   filename: string;
   payload: {
     afterGreens: number;
@@ -17,10 +17,10 @@ export type MagaResponseInfo = {
   };
 };
 
-export type LastMagaInfo = {
+export type LastAbiturientInfo = {
   isCache: any;
-  info: MagaInfoType;
-  item: MagaAbiturientInfo;
+  info: IncomingsPageInfo;
+  item: AbiturientInfo;
   filename: string;
 };
 

@@ -1,13 +1,14 @@
 import { Telegraf, Composer, Context } from 'telegraf';
 import { TelegrafSessionRedis } from '@ivaniuk/telegraf-session-redis';
 import { ExtraReplyMessage } from 'telegraf/typings/telegram-types';
+import * as _ from 'lodash';
 
 import { app, prkomApi } from './app.class';
 import * as xEnv from './environment';
 import {
   IContext,
   ITextMessageContext,
-  MagaResponseInfo,
+  AbiturientInfoResponse,
   NotifyType,
 } from './interfaces';
 import * as keyboardFactory from './keyboard.factory';
@@ -94,8 +95,6 @@ bot.start(async (ctx: ITextMessageContext & { startPayload: string }) => {
       ``,
       `• Используй <code>/watch 123-456-789 10</code>, чтобы указать <i>уникальный код</i> для наблюдения.`,
       `• Используй /info, чтобы узнать текущее состояние.`,
-      ``,
-      `ℹ️ На данный момент доступно отслеживание только списков Магистратуры <i>(скоро Бакалавриат)</i>`,
       ``,
       `Информация об обновлениях бота в <a href="https://vk.com/ystuty">группе VK YSTUty</a>`,
       ``,
@@ -202,8 +201,8 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
     return;
   }
 
-  const res = await prkomApi.get<MagaResponseInfo[]>(
-    `/admission/get/${uid}?original=true`,
+  const res = await prkomApi.get<AbiturientInfoResponse[]>(
+    `/v1/admission/get/${uid}?original=true`,
   );
 
   if (res.data.length === 0) {
@@ -233,9 +232,21 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
         totalSeats && totalSeats - payload.beforeGreens < 1,
       )}`,
       `• Сумма баллов: <code>${item.totalScore || 'нету'}</code>`,
-      `• Баллы за экзамен: <code>${item.scoreExam || 'нету'}</code>`,
+      ...('scoreExam' in item
+        ? [`• Баллы за экзамен: <code>${item.scoreExam || 'нету'}</code>`]
+        : 'scoreSubjects' in item && item.scoreSubjects.length > 0
+        ? [
+            `• Баллы по предметам:`,
+            ...item.scoreSubjects.map(
+              ([num, name]) =>
+                `  ∟ <i>${_.truncate(name, { length: 36 })}</i>: <code>${
+                  num || 'нету'
+                }</code>`,
+            ),
+          ]
+        : []),
       // `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>`,
-      `• Оригинал: <code>${item.originalToUniversity ? '✅' : '✖️'}</code>`,
+      `• Оригинал: <code>${item.originalInUniversity ? '✅' : '✖️'}</code>`,
       `• Приоритет: <code>${item.priority}/${item.priorityHight}</code>`,
       payload.beforeGreens + payload.afterGreens > 0
         ? [

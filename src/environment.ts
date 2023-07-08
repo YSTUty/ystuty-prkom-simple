@@ -14,7 +14,7 @@ export const CACHE_PATH: string = process.env.CACHE_PATH || './.cache-store';
 
 export const YSTU_URL: string = process.env.YSTU_URL || 'https://www.ystu.ru';
 export const YSTUTY_PRKOM_URL: string =
-  process.env.YSTUTY_PRKOM_URL || 'http://ystuty_prkom';
+  process.env.YSTUTY_PRKOM_URL || 'http://ystuty_prkom/api';
 
 export const WATCHING_UIDS: string[] =
   (process.env.WATCHING_UIDS &&
