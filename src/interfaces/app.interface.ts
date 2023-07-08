@@ -26,6 +26,12 @@ export type LastMagaInfo = {
 
 //
 
+export enum NotifyType {
+  All,
+  Important,
+  Disabled,
+}
+
 export type BotTarget = {
   chatId: number;
   first_name: string;
@@ -34,6 +40,6 @@ export type BotTarget = {
 
   loadCount?: number;
   uid?: string;
-  powerOff?: boolean;
+  notifyType?: NotifyType;
   // uids: string[];
 };

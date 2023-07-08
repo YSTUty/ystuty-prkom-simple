@@ -8,10 +8,12 @@ import {
   BotTarget,
   LastMagaInfo,
   MagaResponseInfo,
+  NotifyType,
 } from './interfaces';
-import { greenger, md5, tgKeyboard_ViewFile } from './utils';
 import { cacheManager } from './cache-manager.util';
+import * as keyboardFactory from './keyboard.factory';
 import { redisClient } from './redis.service';
+import { greenger, md5 } from './utils';
 
 export const prkomApi = axios.create({
   baseURL: xEnv.YSTUTY_PRKOM_URL,
@@ -165,6 +167,7 @@ export class App {
             if (apps.has(hashName)) {
               const { info: lastInfo, item: lastItem } = apps.get(hashName);
 
+              let isImportant = false;
               let isNewEnrolled = false;
               const changes: string[] = [];
 
@@ -179,6 +182,9 @@ export class App {
               } else if (
                 lastInfo.numbersInfo.enrolled !== info.numbersInfo.enrolled
               ) {
+                if (!item.isGreen) {
+                  isImportant = true;
+                }
                 changes.push(
                   `💺 <b>МЕСТА</b> изменны (было зачислено: <code>${lastInfo.numbersInfo.enrolled}</code>;` +
                     ` стало зачислено: <code>${info.numbersInfo.enrolled}</code>)`,
@@ -186,6 +192,9 @@ export class App {
               } else if (
                 lastInfo.numbersInfo.toenroll !== info.numbersInfo.toenroll
               ) {
+                if (!item.isGreen) {
+                  isImportant = true;
+                }
                 changes.push(
                   `💺 <b>МЕСТА</b> изменны (было к зачислению: <code>${lastInfo.numbersInfo.toenroll}</code>;` +
                     ` стало к зачислению: <code>${info.numbersInfo.toenroll}</code>)`,
@@ -200,6 +209,7 @@ export class App {
                     AbiturientInfoStateType[item.state]
                   }</code>)`,
                 );
+                isImportant = true;
                 if (
                   item.state === AbiturientInfoStateType.Enrolled ||
                   item.state === AbiturientInfoStateType.Unknown
@@ -210,6 +220,9 @@ export class App {
 
               const posDif = lastItem.position - item.position;
               if (posDif !== 0) {
+                if (posDif > 0) {
+                  isImportant = true;
+                }
                 changes.push(
                   `🍥 <b>ПОЗИЦИЯ</b> изменена ${
                     posDif > 0 ? '👍' : '👎'
@@ -228,6 +241,7 @@ export class App {
                     totalSeats &&
                     lastTotalSeats !== totalSeats))
               ) {
+                isImportant = true;
                 changes.push(
                   `🚀 <b>СТАТУС</b> изменен (было: <code>${greenger(
                     lastItem.isGreen,
@@ -240,6 +254,7 @@ export class App {
               }
 
               if (lastItem.totalScore !== item.totalScore) {
+                isImportant = true;
                 changes.push(
                   `🌟 <b>СУММА БАЛЛОВ</b> изменена (было: <code>${lastItem.totalScore}</code>; стало: <code>${item.totalScore}</code>)`,
                 );
@@ -252,6 +267,7 @@ export class App {
               // }
 
               if (lastItem.scoreExam !== item.scoreExam) {
+                isImportant = true;
                 changes.push(
                   `❇️ <b>БАЛЛЫ ЭКЗА</b> изменены (было: <code>${lastItem.scoreExam}</code>; стало: <code>${item.scoreExam}</code>)`,
                 );
@@ -263,7 +279,14 @@ export class App {
                     [
                       xEnv.TELEGRAM_CHAT_ID,
                       ...targetEntries.map(
-                        ([chatId, v]) => v.uid === uid && !v.powerOff && chatId,
+                        ([chatId, session]) =>
+                          session.uid === uid &&
+                          (!session.notifyType ||
+                            session.notifyType !== NotifyType.Disabled) &&
+                          (session.notifyType == NotifyType.All ||
+                            (session.notifyType === NotifyType.Important &&
+                              isImportant)) &&
+                          chatId,
                       ),
                     ].filter(Boolean),
                   );
@@ -286,7 +309,7 @@ export class App {
                         ].join('\n')}`,
                         {
                           parse_mode: 'HTML',
-                          ...tgKeyboard_ViewFile(app.filename),
+                          ...keyboardFactory.viewFile(app.filename, uid),
                         },
                       )
                       .then(() => {

@@ -4,7 +4,13 @@ import { ExtraReplyMessage } from 'telegraf/typings/telegram-types';
 
 import { app, prkomApi } from './app.class';
 import * as xEnv from './environment';
-import { ITextMessageContext, MagaResponseInfo } from './interfaces';
+import {
+  IContext,
+  ITextMessageContext,
+  MagaResponseInfo,
+  NotifyType,
+} from './interfaces';
+import * as keyboardFactory from './keyboard.factory';
 import { redisClient } from './redis.service';
 import * as utils from './utils';
 
@@ -68,7 +74,7 @@ bot.on('message', async (ctx, next) => {
   return await next();
 });
 
-bot.start((ctx: ITextMessageContext & { startPayload: string }) => {
+bot.start(async (ctx: ITextMessageContext & { startPayload: string }) => {
   const newUidRegexp = /uid\-\-(?<uid>[0-9]{3}\-[0-9]{3}-[0-9]{3}[ _][0-9]{2})/;
   let newUid: string = null;
   if (ctx.startPayload) {
@@ -81,13 +87,15 @@ bot.start((ctx: ITextMessageContext & { startPayload: string }) => {
   let prkomLink = 'https://www.ystu.ru/files/prkom_svod/';
 
   const { npm_package_homepage } = process.env;
-  ctx.replyWithHTML(
+  await ctx.replyWithHTML(
     [
       `Привет! 👋`,
       `Бот позволяет подписаться на уведомления об изменениях в <a href="${prkomLink}">списках поступающих ЯГТУ</a>.`,
       ``,
       `• Используй <code>/watch 123-456-789 10</code>, чтобы указать <i>уникальный код</i> для наблюдения.`,
       `• Используй /info, чтобы узнать текущее состояние.`,
+      ``,
+      `ℹ️ На данный момент доступно отслеживание только списков Магистратуры <i>(скоро Бакалавриат)</i>`,
       ``,
       `Информация об обновлениях бота в <a href="https://vk.com/ystuty">группе VK YSTUty</a>`,
       ``,
@@ -96,7 +104,10 @@ bot.start((ctx: ITextMessageContext & { startPayload: string }) => {
         ? [`<a href="${npm_package_homepage}">View source code on GitHub</a>`]
         : []),
     ].join('\n'),
-    { disable_web_page_preview: true },
+    {
+      disable_web_page_preview: true,
+      ...keyboardFactory.main(ctx as IContext),
+    },
   );
 
   if (newUid) {
@@ -104,9 +115,12 @@ bot.start((ctx: ITextMessageContext & { startPayload: string }) => {
       ctx.session.loadCount = 0;
     }
     ctx.session.uid = newUid;
-    delete ctx.session.powerOff;
+    ctx.session.notifyType = NotifyType.All;
 
-    ctx.replyWithHTML(`⭐️ Добавлено в наблюдение: <code>${newUid}</code>`);
+    ctx.replyWithHTML(
+      `⭐️ Добавлено в наблюдение: <code>${newUid}</code>`,
+      keyboardFactory.main(ctx as IContext),
+    );
   }
 });
 
@@ -172,73 +186,75 @@ bot.command('dump', async (ctx) => {
   }
 });
 
-bot.command(
-  'info',
-  Composer.fork(async (ctx: ITextMessageContext) => {
-    const [, ...rest] = ctx.message.text.split(' ').filter(Boolean);
-    let uid = rest.join(' ') || ctx.session.uid;
+const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
+  const [, ...rest] = ctx.message.text.split(' ').filter(Boolean);
+  let uid = rest.join(' ') || ctx.session.uid;
 
-    if (!uid || uid.length > 16) {
-      ctx.replyWithHTML(
-        `Наблюдение по умолчанию не установлено.\n` +
-          `Необходимо указать корректный <i>уникальный код</i> для проверки.\n` +
-          `Например, <code>/info 123-456-789 10</code>.\n` +
-          `Указаный код не проверяется на стороне бота, поэтому нужно указать корректный, как на сайте.\n\n` +
-          `Используй <code>/watch 123-456-789 10</code>, чтобы указать <i>уникальный код</i> для наблюдения.`,
-      );
-      return;
-    }
-
-    const res = await prkomApi.get<MagaResponseInfo[]>(
-      `/admission/get/${uid}?original=true`,
+  if (!uid || uid.length > 16) {
+    ctx.replyWithHTML(
+      `Наблюдение по умолчанию не установлено.\n` +
+        `Необходимо указать корректный <i>уникальный код</i> для проверки.\n` +
+        `Например, <code>/info 123-456-789 10</code>.\n` +
+        `Указаный код не проверяется на стороне бота, поэтому нужно указать корректный, как на сайте.\n\n` +
+        `Используй <code>/watch 123-456-789 10</code>, чтобы указать <i>уникальный код</i> для наблюдения.`,
+      keyboardFactory.main(ctx as IContext),
     );
+    return;
+  }
 
-    if (res.data.length === 0) {
-      ctx.replyWithHTML(
-        `Нет данных для отображения.\n` +
-          `Убедитесь в правильности Уникального кода.`,
-      );
-      return;
-    }
+  const res = await prkomApi.get<MagaResponseInfo[]>(
+    `/admission/get/${uid}?original=true`,
+  );
 
-    for (const app of res.data) {
-      const { info, originalInfo, item, payload } = app;
-      const totalSeats = info.numbersInfo.total || null;
-      const message = [
-        `<b>УК</b>: [<code>${item.uid}</code>]`,
-        ``,
-        `• ${utils.taggerSmart(originalInfo.buildDate)}`,
-        `• ${utils.taggerSep(originalInfo.competitionGroupName)}`,
-        `• ${utils.taggerSmart(originalInfo.formTraining)}`,
-        `• ${utils.taggerSmart(originalInfo.levelTraining)}`,
-        `• ${utils.taggerSmart(originalInfo.basisAdmission)}`,
-        `• ${utils.taggerSmart(originalInfo.numbersInfo)}`,
-        ``,
-        `• Позиция: <code>${
-          item.position
-        }/${totalSeats}</code> ${utils.greenger(
-          item.isGreen,
-          totalSeats && totalSeats - payload.beforeGreens < 1,
-        )}`,
-        `• Сумма баллов: <code>${item.totalScore || 'нету'}</code>`,
-        `• Баллы за экзамен: <code>${item.scoreExam || 'нету'}</code>`,
-        // `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>`,
-        `• Оригинал: <code>${item.originalToUniversity ? '✅' : '✖️'}</code>`,
-        `• Приоритет: <code>${item.priority}/${item.priorityHight}</code>`,
-        payload.beforeGreens + payload.afterGreens > 0
-          ? [
-              ``,
-              `• До проходит: <code>${payload.beforeGreens}</code> чел.`,
-              `• После проходит: <code>${payload.afterGreens}</code> чел.`,
-            ]
-          : [],
-      ];
-      await ctx.replyWithHTML(
-        message.join('\n'),
-        utils.tgKeyboard_ViewFile(app.filename),
-      );
-    }
-  }),
+  if (res.data.length === 0) {
+    ctx.replyWithHTML(
+      `Нет данных для отображения.\n` +
+        `Убедитесь в правильности Уникального кода.`,
+      keyboardFactory.main(ctx as IContext),
+    );
+    return;
+  }
+
+  for (const app of res.data) {
+    const { info, originalInfo, item, payload } = app;
+    const totalSeats = info.numbersInfo.total || null;
+    const message = [
+      `<b>УК</b>: [<code>${item.uid}</code>]`,
+      ``,
+      `• ${utils.taggerSmart(originalInfo.buildDate)}`,
+      `• ${utils.taggerSep(originalInfo.competitionGroupName)}`,
+      `• ${utils.taggerSmart(originalInfo.formTraining)}`,
+      `• ${utils.taggerSmart(originalInfo.levelTraining)}`,
+      `• ${utils.taggerSmart(originalInfo.basisAdmission)}`,
+      `• ${utils.taggerSmart(originalInfo.numbersInfo)}`,
+      ``,
+      `• Позиция: <code>${item.position}/${totalSeats}</code> ${utils.greenger(
+        item.isGreen,
+        totalSeats && totalSeats - payload.beforeGreens < 1,
+      )}`,
+      `• Сумма баллов: <code>${item.totalScore || 'нету'}</code>`,
+      `• Баллы за экзамен: <code>${item.scoreExam || 'нету'}</code>`,
+      // `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>`,
+      `• Оригинал: <code>${item.originalToUniversity ? '✅' : '✖️'}</code>`,
+      `• Приоритет: <code>${item.priority}/${item.priorityHight}</code>`,
+      payload.beforeGreens + payload.afterGreens > 0
+        ? [
+            ``,
+            `• До проходит: <code>${payload.beforeGreens}</code> чел.`,
+            `• После проходит: <code>${payload.afterGreens}</code> чел.`,
+          ]
+        : [],
+    ];
+    await ctx.replyWithHTML(
+      message.join('\n'),
+      keyboardFactory.viewFile(app.filename, item.uid),
+    );
+  }
+});
+bot.command('info', onInfo);
+bot.hears(
+  new RegExp(keyboardFactory.KeyboardKeys.main.info, 'i'),
+  onInfo as any,
 );
 
 bot.command('watch', (ctx: ITextMessageContext) => {
@@ -250,6 +266,7 @@ bot.command('watch', (ctx: ITextMessageContext) => {
       `Необходимо указать корректный <i>уникальный код</i> для наблюдения.\n` +
         `Например, <code>/watch 123-456-789 10</code>.\n` +
         `Указаный код не проверяется на стороне бота, поэтому нужно указать корректный, как на сайте.`,
+      keyboardFactory.main(ctx as IContext),
     );
     return;
   }
@@ -258,20 +275,83 @@ bot.command('watch', (ctx: ITextMessageContext) => {
     ctx.session.loadCount = 0;
   }
   ctx.session.uid = uid;
-  delete ctx.session.powerOff;
+  ctx.session.notifyType = NotifyType.All;
 
-  ctx.replyWithHTML(`⭐️ Добавлено в наблюдение: <code>${uid}</code>`);
+  ctx.replyWithHTML(
+    `⭐️ Добавлено в наблюдение: <code>${uid}</code>`,
+    keyboardFactory.main(ctx as IContext),
+  );
 });
 
-bot.command('stop', (ctx: ITextMessageContext) => {
+const onStop = (ctx: ITextMessageContext) => {
   if (!ctx.session.uid) {
-    ctx.replyWithHTML(`🔍 Наблюдение не было установлено`);
+    ctx.replyWithHTML(
+      `🔍 Наблюдение не было установлено`,
+      keyboardFactory.main(ctx as IContext),
+    );
     return;
   }
 
-  ctx.session.powerOff = true;
-  ctx.replyWithHTML(`✋ Наблюдение остановлено`);
-});
+  ctx.session.notifyType = NotifyType.Disabled;
+  ctx.replyWithHTML(
+    `✋ Наблюдение остановлено`,
+    keyboardFactory.main(ctx as IContext),
+  );
+};
+bot.command('stop', onStop);
+bot.hears(
+  new RegExp(keyboardFactory.KeyboardKeys.main.stop, 'i'),
+  onStop as any,
+);
+
+const onResume = (ctx: ITextMessageContext) => {
+  if (!ctx.session.uid) {
+    ctx.replyWithHTML(
+      `🔍 Наблюдение не было установлено`,
+      keyboardFactory.main(ctx as IContext),
+    );
+    return;
+  }
+
+  ctx.session.notifyType = NotifyType.All;
+  ctx.replyWithHTML(
+    `▶️ Наблюдение возобновлено`,
+    keyboardFactory.main(ctx as IContext),
+  );
+};
+bot.command('resume', onResume);
+bot.hears(
+  new RegExp(keyboardFactory.KeyboardKeys.main.resume, 'i'),
+  onResume as any,
+);
+
+const onNotifyChange = (ctx: ITextMessageContext) => {
+  if (!ctx.session.uid) {
+    ctx.replyWithHTML(
+      `🔍 Наблюдение не было установлено`,
+      keyboardFactory.main(ctx as IContext),
+    );
+    return;
+  }
+
+  if (ctx.message.text === keyboardFactory.KeyboardKeys.notify.important) {
+    ctx.session.notifyType = NotifyType.Important;
+  } else {
+    ctx.session.notifyType = NotifyType.All;
+  }
+
+  ctx.replyWithHTML(
+    `🔔 Уведомленя: ${NotifyType[ctx.session.notifyType]}`,
+    keyboardFactory.main(ctx as IContext),
+  );
+};
+bot.hears(
+  new RegExp(
+    `${keyboardFactory.KeyboardKeys.notify.all}|${keyboardFactory.KeyboardKeys.notify.important}`,
+    'i',
+  ),
+  onNotifyChange as any,
+);
 
 export const notifyAdmin = async (
   message: string,
