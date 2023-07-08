@@ -68,7 +68,7 @@ bot.on('message', async (ctx, next) => {
   return await next();
 });
 
-bot.start((ctx) => {
+bot.start((ctx: ITextMessageContext & { startPayload: string }) => {
   const newUidRegexp = /uid\-\-(?<uid>[0-9]{3}\-[0-9]{3}-[0-9]{3}[ _][0-9]{2})/;
   let newUid: string = null;
   if (ctx.startPayload) {
@@ -99,10 +99,15 @@ bot.start((ctx) => {
     { disable_web_page_preview: true },
   );
 
-  // TODO: make it
-  // if (newUid) {
-  //   ctx.replyWithHTML(`New uid: ${newUid}`);
-  // }
+  if (newUid) {
+    if (ctx.session.uid !== newUid || !ctx.session.loadCount) {
+      ctx.session.loadCount = 0;
+    }
+    ctx.session.uid = newUid;
+    delete ctx.session.powerOff;
+
+    ctx.replyWithHTML(`⭐️ Добавлено в наблюдение: <code>${newUid}</code>`);
+  }
 });
 
 bot.command('app', (ctx) => {
@@ -255,17 +260,17 @@ bot.command('watch', (ctx: ITextMessageContext) => {
   ctx.session.uid = uid;
   delete ctx.session.powerOff;
 
-  ctx.replyWithHTML(`Добавлено в наблюдение: <code>${uid}</code>`);
+  ctx.replyWithHTML(`⭐️ Добавлено в наблюдение: <code>${uid}</code>`);
 });
 
 bot.command('stop', (ctx: ITextMessageContext) => {
   if (!ctx.session.uid) {
-    ctx.replyWithHTML(`Наблюдение не было установлено`);
+    ctx.replyWithHTML(`🔍 Наблюдение не было установлено`);
     return;
   }
 
   ctx.session.powerOff = true;
-  ctx.replyWithHTML(`Наблюдение остановлено`);
+  ctx.replyWithHTML(`✋ Наблюдение остановлено`);
 });
 
 export const notifyAdmin = async (
