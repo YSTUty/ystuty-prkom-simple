@@ -36,7 +36,7 @@ export const TELEGRAM_ADMIN_IDS: number[] =
   [];
 
 // Redis
-export const REDIS_HOST: string = process.env.REDIS_HOST || '127.0.0.1';
+export const REDIS_HOST: string = process.env.REDIS_HOST || 'redis';
 export const REDIS_PORT: number = +process.env.REDIS_PORT || 6379;
 export const REDIS_PASSWORD: string = process.env.REDIS_PASSWORD;
 export const REDIS_DATABASE: number = +process.env.REDIS_DATABASE || 0;
