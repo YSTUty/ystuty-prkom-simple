@@ -3,6 +3,7 @@
   "version": "1.2.2",
   "author": "xTCry [Vladislav Kh] (https://github.com/xTCry/)",
   "description": "YSTUty-prkom simple telegram bot",
+  "private": true,
   "license": "MIT",
   "repository": {
     "url": "https://github.com/ystuty/ystuty-prkom-simple.git",
