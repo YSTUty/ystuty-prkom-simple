@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.2.2...v1.3.0) (2023-07-10)
+
+
+### 🧹 Chore
+
+* **deps:** update ([c6ef0f0](https://github.com/ystuty/ystuty-prkom-simple/commit/c6ef0f0fd414e9d4378a0b7ca8f83a00a74d37ff))
+* **package:** add `private` param ([9cb7006](https://github.com/ystuty/ystuty-prkom-simple/commit/9cb7006b5c81bf6bc4684571bc3baf83de18aa74))
+
+
+### 🚀 Features
+
+* **bot:** add `minfo` cmd for display short info ([4c5356c](https://github.com/ystuty/ystuty-prkom-simple/commit/4c5356ce40490492acc2ed07016c3a013dab9bcc))
+
 ### [1.2.2](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.2.1...v1.2.2) (2023-07-10)
 
 
