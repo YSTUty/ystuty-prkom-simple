@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.2.2](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.2.1...v1.2.2) (2023-07-10)
+
+
+### 🚀 Features
+
+* **app:** update to a new admission campaign (`232`) ([0d83145](https://github.com/ystuty/ystuty-prkom-simple/commit/0d83145765eea3ed6681fd3cbbbb652a9fb48ca2))
+* **app:** update types for abitur (by `Bachelor` & `Magister`) ([663960e](https://github.com/ystuty/ystuty-prkom-simple/commit/663960ebd4bd799448362e14ae7e28814772843c))
+* **docker:** add docker files ([e2ec121](https://github.com/ystuty/ystuty-prkom-simple/commit/e2ec1214f576a98119aa10b2c88f7f38c8b9940f))
+
+
+### 🧹 Chore
+
+* **bot:** add watching from `startPayload` ([a3fcc5d](https://github.com/ystuty/ystuty-prkom-simple/commit/a3fcc5dd3ddce83542c75495d2586ee28b2eff4b))
+* **bot:** update keyboard ([b4fe89c](https://github.com/ystuty/ystuty-prkom-simple/commit/b4fe89c4e2b7c7647508f945b1e9c728ad206ea9))
+* **env:** update example ([2605dc7](https://github.com/ystuty/ystuty-prkom-simple/commit/2605dc7588e11b62f111c2178f3f9913437a6153))
+
 ### [1.2.1](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.2.0...v1.2.1) (2022-08-12)
 
 
