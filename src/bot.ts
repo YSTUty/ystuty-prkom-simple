@@ -21,7 +21,7 @@ import * as utils from './utils';
 
 export const redisSession = new TelegrafSessionRedis({
   client: redisClient,
-  getSessionKey: (ctx: Context) =>
+  getSessionKey: (ctx) =>
     ctx.from && ctx.chat && `session:${ctx.from.id}:${ctx.chat.id}`,
 });
 const rateLimiter = new utils.RateLimiter(1, 1e3);
@@ -37,6 +37,7 @@ bot.launch().then(() => {
 bot.telegram.setMyCommands([
   { command: 'start', description: 'Show menu' },
   { command: 'info', description: 'Show my info' },
+  { command: 'minfo', description: 'Show short info' },
   { command: 'watch', description: 'Set watcher' },
   { command: 'stop', description: 'Stop watcher' },
 ]);
@@ -214,7 +215,10 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
     return;
   }
 
-  for (const app of res.data) {
+  const applications = res.data;
+  applications.sort((a, b) => a.item.priority - b.item.priority);
+
+  for (const app of applications) {
     const { info, originalInfo, item, payload } = app;
     const totalSeats = info.numbersInfo.total || null;
     const message = [
@@ -239,7 +243,7 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
             `• Баллы по предметам:`,
             ...item.scoreSubjects.map(
               ([num, name]) =>
-                `  ∟ <i>${_.truncate(name, { length: 36 })}</i>: <code>${
+                `  ∟ <i>${_.truncate(name, { length: 32 })}</i>: <code>${
                   num || 'нету'
                 }</code>`,
             ),
@@ -266,6 +270,84 @@ bot.command('info', onInfo);
 bot.hears(
   new RegExp(keyboardFactory.KeyboardKeys.main.info, 'i'),
   onInfo as any,
+);
+
+const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
+  const newUidRegexp = /.*(?<uid>[0-9]{3}\-[0-9]{3}-[0-9]{3}[ _][0-9]{2})$/;
+  let newUid: string = null;
+  let uidRes = ctx.message.text.match(newUidRegexp)?.groups;
+  if (uidRes) {
+    newUid = uidRes.uid.replace(/_/, ' ');
+  }
+  let uid = newUid || ctx.session.uid;
+
+  if (!uid || uid.length > 16) {
+    ctx.replyWithHTML(
+      `Наблюдение по умолчанию не установлено.\n` +
+        `Необходимо указать корректный <i>уникальный код</i> для проверки.\n` +
+        `Например, <code>/info 123-456-789 10</code>.\n` +
+        `Указаный код не проверяется на стороне бота, поэтому нужно указать корректный, как на сайте.\n\n` +
+        `Используй <code>/watch 123-456-789 10</code>, чтобы указать <i>уникальный код</i> для наблюдения.`,
+      keyboardFactory.main(ctx as IContext),
+    );
+    return;
+  }
+
+  const res = await prkomApi.get<AbiturientInfoResponse[]>(
+    `/v1/admission/get/${uid}?original=true`,
+  );
+
+  if (res.data.length === 0) {
+    ctx.replyWithHTML(
+      `Нет данных для отображения.\n` +
+        `Убедитесь в правильности Уникального кода.`,
+      keyboardFactory.main(ctx as IContext),
+    );
+    return;
+  }
+
+  const applications = res.data;
+  const firstApp = applications.at(0);
+
+  applications.sort((a, b) => a.item.priority - b.item.priority);
+
+  let message: string[] = [
+    `<b>УК</b>: [<code>${uid}</code>]`,
+    ``,
+    `• ${utils.taggerSmart(firstApp.originalInfo.buildDate)}`,
+  ];
+
+  for (const app of res.data) {
+    const { info, originalInfo, item, payload } = app;
+    const viewLink = `${xEnv.YSTU_URL}/files/prkom_svod/${
+      app.filename
+    }#:~:text=${encodeURIComponent(uid).replace(/\-/g, '%2D')}`;
+    const totalSeats = info.numbersInfo.total || null;
+    const badPosition = totalSeats && totalSeats - payload.beforeGreens < 1;
+    const originalInEmoji = item.originalInUniversity ? '✅' : '✖️';
+    const posStr = `${item.position}/${totalSeats}`;
+    const greengerEmoji = utils.greenger(item.isGreen, badPosition);
+
+    message.push(
+      ``,
+      `✦ • · · · · · <a href="${viewLink}">[На сайте]</a> · · · · · • ✦`,
+      `├── ${utils.taggerSep(originalInfo.competitionGroupName)}`,
+      `├── ${utils.taggerSmart(originalInfo.formTraining)}`,
+      `├── ${utils.taggerSmart(originalInfo.levelTraining)}`,
+      `├── ${utils.taggerSmart(originalInfo.basisAdmission)}`,
+      `└── ${utils.taggerSmart(originalInfo.numbersInfo)}`,
+      `      ├── Позиция: <code>${posStr}</code> ${greengerEmoji}`,
+      `      ├── Сумма баллов: <code>${item.totalScore || 'нету'}</code>`,
+      `      ├── Оригинал: <code>${originalInEmoji}</code>`,
+      `      └── Приоритет: <code>${item.priority}/${item.priorityHight}</code>`,
+    );
+  }
+  await ctx.replyWithHTML(message.join('\n'));
+});
+bot.command('minfo', onShortInfo);
+bot.hears(
+  new RegExp(keyboardFactory.KeyboardKeys.main.minfo, 'i'),
+  onShortInfo as any,
 );
 
 bot.command('watch', (ctx: ITextMessageContext) => {

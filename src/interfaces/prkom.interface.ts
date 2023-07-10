@@ -75,9 +75,14 @@ export enum FormTrainingType {
 /** Тип уровня образования */
 export enum LevelTrainingType {
   Unknown = 0,
+  /** Бакалавриат */
   Bachelor = 1,
+  /** Магистратура */
   Magister = 2,
+  /** Аспирантура */
   Postgraduate = 3,
+  /** Специалитет */
+  Specialty = 4,
 }
 
 /** Оригинальная информация на странице списка поступающих */
@@ -143,7 +148,7 @@ export type IncomingsPageInfo = {
 
 export type AbiturientInfo = AbiturientInfo_Bachelor | AbiturientInfo_Magister;
 
-/** Информация заявления (на бакалавриат) */
+/** Информация заявления (на бакалавриат и специалитет) */
 export type AbiturientInfo_Bachelor = {
   /** Выделен зеленым */
   isGreen: boolean;
@@ -172,7 +177,7 @@ export type AbiturientInfo_Bachelor = {
   priorityHight: number;
 };
 
-/** Информация заявления (на магистратуру) */
+/** Информация заявления (на магистратуру и аспирантуру) */
 export type AbiturientInfo_Magister = {
   /** Выделен зеленым */
   isGreen: boolean;

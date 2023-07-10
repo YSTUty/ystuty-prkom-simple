@@ -23,6 +23,7 @@ export const viewFile = (filename: string, uid: string) =>
 export const KeyboardKeys = {
   main: {
     info: 'Инфо',
+    minfo: 'Краткая инфа',
     // settings: 'Настройки',
     stop: 'Приостановить',
     resume: 'Возобновить',
@@ -35,7 +36,7 @@ export const KeyboardKeys = {
 
 export const main = (ctx: IContext) =>
   Markup.keyboard([
-    [KeyboardKeys.main.info /* , KeyboardKeys.main.settings */],
+    [KeyboardKeys.main.info, KeyboardKeys.main.minfo],
     [
       ...(ctx.session.uid
         ? [
