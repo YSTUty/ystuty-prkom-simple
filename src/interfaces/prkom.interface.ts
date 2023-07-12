@@ -148,14 +148,19 @@ export type IncomingsPageInfo = {
 
 export type AbiturientInfo = AbiturientInfo_Bachelor | AbiturientInfo_Magister;
 
-/** Информация заявления (на бакалавриат и специалитет) */
-export type AbiturientInfo_Bachelor = {
+type AbiturientInfo_Base = {
   /** Выделен зеленым */
   isGreen: boolean;
+  /** Выделен красным */
+  isRed: boolean;
   /** Номер позиции в списке */
   position: number;
   /** Уникальный код */
   uid: string;
+};
+
+/** Информация заявления (на бакалавриат и специалитет) */
+export type AbiturientInfo_Bachelor = AbiturientInfo_Base & {
   /** Сумма баллов */
   totalScore: number;
   /** Сумма баллов по предметам */
@@ -178,13 +183,7 @@ export type AbiturientInfo_Bachelor = {
 };
 
 /** Информация заявления (на магистратуру и аспирантуру) */
-export type AbiturientInfo_Magister = {
-  /** Выделен зеленым */
-  isGreen: boolean;
-  /** Номер позиции в списке */
-  position: number;
-  /** Уникальный код */
-  uid: string;
+export type AbiturientInfo_Magister = AbiturientInfo_Base & {
   /** Сумма баллов */
   totalScore: number;
   /** Сумма баллов по предметам */

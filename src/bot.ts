@@ -236,7 +236,7 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       ``,
       `• Позиция: <code>${item.position}/${totalSeats}</code> ${utils.greenger(
         item.isGreen,
-        totalSeats && totalSeats - payload.beforeGreens < 1,
+        item.isRed || (totalSeats && totalSeats - payload.beforeGreens < 1),
       )}`,
       `• Сумма баллов: <code>${item.totalScore || 'нету'}</code>`,
       ...('scoreExam' in item
@@ -329,7 +329,10 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
     const badPosition = totalSeats && totalSeats - payload.beforeGreens < 1;
     const originalInEmoji = item.originalInUniversity ? '✅' : '✖️';
     const posStr = `${item.position}/${totalSeats}`;
-    const greengerEmoji = utils.greenger(item.isGreen, badPosition);
+    const greengerEmoji = utils.greenger(
+      item.isGreen,
+      item.isRed || badPosition,
+    );
 
     message.push(
       ``,

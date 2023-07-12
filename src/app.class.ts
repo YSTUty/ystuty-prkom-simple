@@ -246,10 +246,12 @@ export class App {
                 changes.push(
                   `🚀 <b>СТАТУС</b> изменен (было: <code>${greenger(
                     lastItem.isGreen,
-                    lastTotalSeats && lastItem.position > lastTotalSeats,
+                    lastItem.isRed ||
+                      (lastTotalSeats && lastItem.position > lastTotalSeats),
                   )}</code>; стало: <code>${greenger(
                     item.isGreen,
-                    totalSeats && totalSeats - app.payload.beforeGreens < 1,
+                    item.isRed ||
+                      (totalSeats && totalSeats - app.payload.beforeGreens < 1),
                   )}</code>)`,
                 );
               }
