@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.1](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.3.0...v1.3.1) (2023-07-12)
+
+
+### 🧹 Chore
+
+* **bot:** update `watch` command ([b66eebb](https://github.com/ystuty/ystuty-prkom-simple/commit/b66eebbb3fdf1071e766b3785b87eb9be85bec1f))
+* **deps:** update dev deps ([e62014c](https://github.com/ystuty/ystuty-prkom-simple/commit/e62014ca455403293bd884ec4c02bec98e4d5f2c))
+* **ts:** add `skipLibCheck` ([12158f6](https://github.com/ystuty/ystuty-prkom-simple/commit/12158f63d352ee2126491699938984aac6e40dc1))
+
+
+### 🚀 Features
+
+* add `AbiturientInfo` param `isRed` ([8571925](https://github.com/ystuty/ystuty-prkom-simple/commit/8571925e21c0363acbdefd83cee79e0a091b9b58))
+
 ## [1.3.0](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.2.2...v1.3.0) (2023-07-10)
 
 
