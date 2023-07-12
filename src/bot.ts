@@ -94,7 +94,10 @@ bot.start(async (ctx: ITextMessageContext & { startPayload: string }) => {
       `Привет! 👋`,
       `Бот позволяет подписаться на уведомления об изменениях в <a href="${prkomLink}">списках поступающих ЯГТУ</a>.`,
       ``,
-      `• Используй <code>/watch 123-456-789 10</code>, чтобы указать <i>уникальный код</i> для наблюдения.`,
+      `• "Уникальный код" — "УК" — это номер СНИЛСа.`,
+      ``,
+      `• Для начала отслеживания изменений отправь сообщение с <i>уникальным кодом</i>;`,
+      `• или используй команду с указанием параметра <code>/watch 123-456-789 10</code>, где <i>123-456-789 10</i> - уникальный код для наблюдения.`,
       `• Используй /info, чтобы узнать текущее состояние.`,
       ``,
       `Информация об обновлениях бота в <a href="https://vk.com/ystuty">группе VK YSTUty</a>`,
@@ -268,7 +271,7 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
 });
 bot.command('info', onInfo);
 bot.hears(
-  new RegExp(keyboardFactory.KeyboardKeys.main.info, 'i'),
+  new RegExp(`^${keyboardFactory.KeyboardKeys.main.info}`, 'i'),
   onInfo as any,
 );
 
@@ -346,15 +349,20 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
 });
 bot.command('minfo', onShortInfo);
 bot.hears(
-  new RegExp(keyboardFactory.KeyboardKeys.main.minfo, 'i'),
+  new RegExp(`^${keyboardFactory.KeyboardKeys.main.minfo}`, 'i'),
   onShortInfo as any,
 );
 
-bot.command('watch', (ctx: ITextMessageContext) => {
-  const [, ...rest] = ctx.message.text.split(' ').filter(Boolean);
-  const uid = rest.join(' ');
+const onWatch = (ctx: ITextMessageContext) => {
+  const newUidRegexp = /.*?(?<uid>[0-9]{3}\-[0-9]{3}-[0-9]{3}[ _][0-9]{2})$/;
+  let uid: string = null;
+  const uidRes = ctx.message.text.match(newUidRegexp)?.groups;
+  if (uidRes) {
+    uid = uidRes.uid.replace(/_/, ' ');
+  }
+  const oldUid = ctx.session.uid;
 
-  if (uid.length === 0 || uid.length > 16) {
+  if (!uid || uid.length === 0 || uid.length > 16) {
     ctx.replyWithHTML(
       `Необходимо указать корректный <i>уникальный код</i> для наблюдения.\n` +
         `Например, <code>/watch 123-456-789 10</code>.\n` +
@@ -363,18 +371,29 @@ bot.command('watch', (ctx: ITextMessageContext) => {
     );
     return;
   }
+  if (oldUid && oldUid === uid) {
+    ctx.replyWithHTML(
+      `⭐️ УК [<code>${uid}</code>] уже отслеживается`,
+      keyboardFactory.main(ctx as IContext),
+    );
+    return;
+  }
 
-  if (ctx.session.uid !== uid || !ctx.session.loadCount) {
+  if (oldUid !== uid || !ctx.session.loadCount) {
     ctx.session.loadCount = 0;
   }
   ctx.session.uid = uid;
   ctx.session.notifyType = NotifyType.All;
 
   ctx.replyWithHTML(
-    `⭐️ Добавлено в наблюдение: <code>${uid}</code>`,
+    oldUid && oldUid !== uid
+      ? `⭐️ Изменено наблюдение с [<code>${oldUid}</code>] на [<code>${uid}</code>]`
+      : `⭐️ Добавлено в наблюдение: [<code>${uid}</code>]`,
     keyboardFactory.main(ctx as IContext),
   );
-});
+};
+bot.command('watch', onWatch);
+bot.hears(/^([0-9]{3}\-[0-9]{3}-[0-9]{3}[ _][0-9]{2})$/, onWatch as any);
 
 const onStop = (ctx: ITextMessageContext) => {
   if (!ctx.session.uid) {
@@ -393,7 +412,7 @@ const onStop = (ctx: ITextMessageContext) => {
 };
 bot.command('stop', onStop);
 bot.hears(
-  new RegExp(keyboardFactory.KeyboardKeys.main.stop, 'i'),
+  new RegExp(`^${keyboardFactory.KeyboardKeys.main.stop}`, 'i'),
   onStop as any,
 );
 
@@ -414,7 +433,7 @@ const onResume = (ctx: ITextMessageContext) => {
 };
 bot.command('resume', onResume);
 bot.hears(
-  new RegExp(keyboardFactory.KeyboardKeys.main.resume, 'i'),
+  new RegExp(`^${keyboardFactory.KeyboardKeys.main.resume}`, 'i'),
   onResume as any,
 );
 
@@ -440,7 +459,7 @@ const onNotifyChange = (ctx: ITextMessageContext) => {
 };
 bot.hears(
   new RegExp(
-    `${keyboardFactory.KeyboardKeys.notify.all}|${keyboardFactory.KeyboardKeys.notify.important}`,
+    `^(${keyboardFactory.KeyboardKeys.notify.all}|${keyboardFactory.KeyboardKeys.notify.important})`,
     'i',
   ),
   onNotifyChange as any,
