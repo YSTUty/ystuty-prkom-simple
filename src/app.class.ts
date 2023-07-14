@@ -232,7 +232,6 @@ export class App {
 
               if (
                 !isNewEnrolled &&
-                // ! TOOD: for competition (null)
                 ((lastItem.isGreen !== null &&
                   lastItem.isGreen !== item.isGreen) ||
                   (lastItem.isRed !== null && lastItem.isRed !== item.isRed) ||
@@ -341,7 +340,7 @@ export class App {
                   new Date().toLocaleString(),
                   `(CHANGES) [${uid}] 🚨 Detected changes on "${info.competitionGroupName}"`,
                 );
-                console.log(changes.join('\n'));
+                // console.log(changes.join('\n'));
               }
             }
 
