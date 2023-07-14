@@ -9,11 +9,10 @@ export const viewFile = (filename: string, uid: string) =>
         ? [
             Markup.button.url(
               'Посмотреть на сайте',
-              `${
-                xEnv.YSTU_URL
-              }/files/prkom_svod/${filename}#:~:text=${encodeURIComponent(
-                uid,
-              ).replace(/\-/g, '%2D')}`,
+              `${xEnv.YSTU_URL}/files/prkom_svod/${filename}#:~:text=${
+                // encodeURIComponent(uid).replace(/\-/g, '%2D')
+                encodeURIComponent(uid.split('-').pop())
+              }`,
             ),
           ]
         : [],

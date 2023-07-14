@@ -257,13 +257,13 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
         item.originalInUniversity || item.originalFromEGPU ? '✅' : '✖️'
       }</code>`,
       `• Приоритет: <code>${item.priority}/${item.priorityHight}</code>`,
-      payload.beforeGreens + payload.afterGreens > 0
+      ...(payload.beforeGreens + payload.afterGreens > 0
         ? [
             ``,
             `• До проходит: <code>${payload.beforeGreens}</code> чел.`,
             `• После проходит: <code>${payload.afterGreens}</code> чел.`,
           ]
-        : [],
+        : []),
     ];
     await ctx.replyWithHTML(
       message.join('\n'),
@@ -324,9 +324,11 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
 
   for (const app of res.data) {
     const { info, originalInfo, item, payload } = app;
-    const viewLink = `${xEnv.YSTU_URL}/files/prkom_svod/${
-      app.filename
-    }#:~:text=${encodeURIComponent(uid).replace(/\-/g, '%2D')}`;
+
+    // const textHash = encodeURIComponent(uid).replace(/\-/g, '%2D');
+    const textHash = encodeURIComponent(uid.split('-').pop());
+    const viewLink = `${xEnv.YSTU_URL}/files/prkom_svod/${app.filename}#:~:text=${textHash}`;
+
     const totalSeats = info.numbersInfo.total || null;
     const badPosition = totalSeats && totalSeats - payload.beforeGreens < 1;
     const originalInEmoji =
@@ -349,6 +351,13 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       `      ├── Сумма баллов: <code>${item.totalScore || 'нету'}</code>`,
       `      ├── Оригинал: <code>${originalInEmoji}</code>`,
       `      └── Приоритет: <code>${item.priority}/${item.priorityHight}</code>`,
+      ...(payload.beforeGreens + payload.afterGreens > 0
+        ? [
+            ``,
+            `            ├── До проходит: <code>${payload.beforeGreens}</code> чел.`,
+            `            └── После проходит: <code>${payload.afterGreens}</code> чел.`,
+          ]
+        : []),
     );
   }
   await ctx.replyWithHTML(message.join('\n'));
