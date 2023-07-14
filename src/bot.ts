@@ -253,7 +253,9 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
           ]
         : []),
       // `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>`,
-      `• Оригинал: <code>${item.originalInUniversity ? '✅' : '✖️'}</code>`,
+      `• Оригинал: <code>${
+        item.originalInUniversity || item.originalFromEGPU ? '✅' : '✖️'
+      }</code>`,
       `• Приоритет: <code>${item.priority}/${item.priorityHight}</code>`,
       payload.beforeGreens + payload.afterGreens > 0
         ? [
@@ -327,7 +329,8 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
     }#:~:text=${encodeURIComponent(uid).replace(/\-/g, '%2D')}`;
     const totalSeats = info.numbersInfo.total || null;
     const badPosition = totalSeats && totalSeats - payload.beforeGreens < 1;
-    const originalInEmoji = item.originalInUniversity ? '✅' : '✖️';
+    const originalInEmoji =
+      item.originalInUniversity || item.originalFromEGPU ? '✅' : '✖️';
     const posStr = `${item.position}/${totalSeats}`;
     const greengerEmoji = utils.greenger(
       item.isGreen,

@@ -157,6 +157,10 @@ type AbiturientInfo_Base = {
   position: number;
   /** Уникальный код */
   uid: string;
+  /** Оригинал в ВУЗе */
+  originalInUniversity: boolean;
+  /** Оригинал из ЕПГУ */
+  originalFromEGPU: boolean;
 };
 
 /** Информация заявления (на бакалавриат и специалитет) */
@@ -172,8 +176,6 @@ export type AbiturientInfo_Bachelor = AbiturientInfo_Base & {
   scoreCompetitive: number;
   /** Преимущ. право */
   preemptiveRight: boolean;
-  /** Оригинал в ВУЗе */
-  originalInUniversity: boolean;
   /** Состояние */
   state: AbiturientInfoStateType | null;
   /** Приоритет */
@@ -197,8 +199,6 @@ export type AbiturientInfo_Magister = AbiturientInfo_Base & {
   preemptiveRight: boolean;
   // consentTransfer: boolean;
   // original: boolean;
-  /** Оригинал в ВУЗе */
-  originalInUniversity: boolean;
   // consentToanotherDirection: boolean;
   /** Состояние */
   state: AbiturientInfoStateType | null;

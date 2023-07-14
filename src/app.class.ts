@@ -211,10 +211,7 @@ export class App {
                   }</code>)`,
                 );
                 isImportant = true;
-                if (
-                  item.state === AbiturientInfoStateType.Enrolled ||
-                  item.state === AbiturientInfoStateType.Unknown
-                ) {
+                if (item.state === AbiturientInfoStateType.Enrolled) {
                   isNewEnrolled = true;
                 }
               }
@@ -238,6 +235,7 @@ export class App {
                 // ! TOOD: for competition (null)
                 ((lastItem.isGreen !== null &&
                   lastItem.isGreen !== item.isGreen) ||
+                  (lastItem.isRed !== null && lastItem.isRed !== item.isRed) ||
                   (lastTotalSeats &&
                     totalSeats &&
                     lastTotalSeats !== totalSeats))
