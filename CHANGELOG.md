@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.2](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.3.1...v1.3.2) (2023-07-14)
+
+
+### 🧹 Chore
+
+* **app:** add `originalFromEGPU` param to `AbiturientInfo` ([bce4d5e](https://github.com/ystuty/ystuty-prkom-simple/commit/bce4d5eee91e6d8915d1218d4c950f1a1ff4996a))
+* **app:** do not logging changes ([9a2f639](https://github.com/ystuty/ystuty-prkom-simple/commit/9a2f6393cf6aa711e6066b731c75313ea3166d4f))
+* **bot:** fix text anchor hash with `-` for telegram message ([56b2cdf](https://github.com/ystuty/ystuty-prkom-simple/commit/56b2cdf7a447008fafebc90aa6813368c01eac70))
+
 ### [1.3.1](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.3.0...v1.3.1) (2023-07-12)
 
 
