@@ -14,6 +14,7 @@ import { cacheManager } from './cache-manager.util';
 import * as keyboardFactory from './keyboard.factory';
 import { redisClient } from './redis.service';
 import { greenger, md5 } from './utils';
+import { userCounter, startMetric } from './prometheus';
 
 export const prkomApi = axios.create({
   baseURL: xEnv.YSTUTY_PRKOM_URL,
@@ -29,6 +30,19 @@ export class App {
   public async init() {
     await this.load();
     await this.checkVersion();
+
+    try {
+      bot.botInfo ??= await bot.telegram.getMe();
+      const availableSessions = Object.values(await this.getTargets()).filter(
+        (e) => !e.isBlockedBot,
+      );
+      console.log('Counter users set', availableSessions.length);
+      userCounter.set({ bot: bot.botInfo.username }, availableSessions.length);
+    } catch (err) {
+      console.error(err);
+    }
+
+    startMetric();
     this.runWatcher().then();
   }
 

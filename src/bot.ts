@@ -21,6 +21,7 @@ import {
 import * as keyboardFactory from './keyboard.factory';
 import { redisClient } from './redis.service';
 import * as utils from './utils';
+import { userCounter } from './prometheus';
 
 // if (!xEnv.TELEGRAM_BOT_TOKEN) {
 //   throw new Error('TELEGRAM_BOT_TOKEN is not defined');
@@ -87,7 +88,7 @@ bot.telegram.setMyCommands([
 ]);
 
 bot.use(redisSession.middleware());
-bot.use((ctx: any, next) => {
+bot.use((ctx: IContext, next) => {
   if (!ctx.session.chatId) {
     ctx.session.startAt = new Date();
     notifyAdmin(
@@ -133,6 +134,9 @@ bot.on(
     const { status } = ctx.myChatMember.new_chat_member;
     if (status === 'kicked' || status === 'left') {
       ctx.session.isBlockedBot = true;
+      userCounter.dec({ bot: ctx.botInfo.username });
+    } else if (status === 'member') {
+      userCounter.inc({ bot: ctx.botInfo.username });
     }
   },
 );

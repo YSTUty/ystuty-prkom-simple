@@ -35,6 +35,10 @@ export const TELEGRAM_ADMIN_IDS: number[] =
       .filter(Boolean)) ||
   [];
 
+// Prometheus
+export const PROMETHEUS_PUSHGATEWAY_URL: string =
+  process.env.PROMETHEUS_PUSHGATEWAY_URL || '';
+
 // Redis
 export const REDIS_HOST: string = process.env.REDIS_HOST || 'redis';
 export const REDIS_PORT: number = +process.env.REDIS_PORT || 6379;
