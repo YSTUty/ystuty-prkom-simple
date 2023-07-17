@@ -91,6 +91,7 @@ bot.use(redisSession.middleware());
 bot.use((ctx: IContext, next) => {
   if (!ctx.session.chatId) {
     ctx.session.startAt = new Date();
+    userCounter.inc({ bot: ctx.botInfo.username });
     notifyAdmin(
       `<b>[DEBUG]</b> New user: <code>${ctx.from.id}</code> - ${
         ctx.from.username ? `@${ctx.from.username}` : 'no username'
