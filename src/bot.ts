@@ -1,6 +1,12 @@
-import { Telegraf, Composer, Context } from 'telegraf';
+import {
+  Telegraf,
+  Composer,
+  TelegramError,
+  Context as TelegrafContext,
+} from 'telegraf';
 import { TelegrafSessionRedis } from '@ivaniuk/telegraf-session-redis';
 import { ExtraReplyMessage } from 'telegraf/typings/telegram-types';
+import * as tt from 'telegraf/typings/core/types/typegram';
 import * as _ from 'lodash';
 
 import { app, prkomApi } from './app.class';
@@ -10,6 +16,7 @@ import {
   ITextMessageContext,
   AbiturientInfoResponse,
   NotifyType,
+  INarrowedContext,
 } from './interfaces';
 import * as keyboardFactory from './keyboard.factory';
 import { redisClient } from './redis.service';
@@ -26,10 +33,47 @@ export const redisSession = new TelegrafSessionRedis({
 });
 const rateLimiter = new utils.RateLimiter(1, 1e3);
 
-let bot = new Telegraf(xEnv.TELEGRAM_BOT_TOKEN);
-bot.catch((e) => {
-  console.error(e);
+export const botCatchException = async (
+  exception: Error,
+  ctxOrChatId: IContext | string | number,
+) => {
+  if (exception instanceof TelegramError) {
+    if (
+      exception.description.includes('bot was blocked by the user') ||
+      exception.description.includes('user is deactivated') ||
+      exception.description.includes('chat not found')
+    ) {
+      let fromId = -1;
+      let chatId = -1;
+
+      let ctx = ctxOrChatId;
+      if (typeof ctx === 'string' || typeof ctx === 'number') {
+        fromId = chatId = Number(ctx);
+      } else {
+        fromId = ctx.from.id;
+        chatId = ctx.chat.id;
+      }
+
+      const key = `session:${fromId}:${chatId}`;
+      let session = await redisSession.getSession(key);
+      if (session.isBlockedBot) {
+        return true;
+      }
+
+      session.isBlockedBot = true;
+      await redisSession.saveSession(key, session);
+      return true;
+    }
+  }
+};
+
+const bot = new Telegraf(xEnv.TELEGRAM_BOT_TOKEN);
+bot.catch(async (exception: any, ctx: IContext) => {
+  if (!(await botCatchException(exception, ctx))) {
+    console.error(exception);
+  }
 });
+
 bot.launch().then(() => {
   console.log('Bot launched');
 });
@@ -45,9 +89,16 @@ bot.telegram.setMyCommands([
 bot.use(redisSession.middleware());
 bot.use((ctx: any, next) => {
   if (!ctx.session.chatId) {
+    ctx.session.startAt = new Date();
     notifyAdmin(
-      `<b>[DEBUG]</b> New user: <code>${ctx.from.id}</code> <code>@${ctx.from.username}</code>`,
+      `<b>[DEBUG]</b> New user: <code>${ctx.from.id}</code> - ${
+        ctx.from.username ? `@${ctx.from.username}` : 'no username'
+      }`,
     );
+  }
+
+  if (ctx.session.isBlockedBot) {
+    delete ctx.session.isBlockedBot;
   }
 
   const toSession = {
@@ -75,6 +126,16 @@ bot.on('message', async (ctx, next) => {
   }
   return await next();
 });
+
+bot.on(
+  'my_chat_member',
+  (ctx: INarrowedContext<tt.Update.MyChatMemberUpdate>) => {
+    const { status } = ctx.myChatMember.new_chat_member;
+    if (status === 'kicked' || status === 'left') {
+      ctx.session.isBlockedBot = true;
+    }
+  },
+);
 
 bot.start(async (ctx: ITextMessageContext & { startPayload: string }) => {
   const newUidRegexp = /uid\-\-(?<uid>[0-9]{3}\-[0-9]{3}-[0-9]{3}[ _][0-9]{2})/;

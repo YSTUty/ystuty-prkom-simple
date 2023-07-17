@@ -5,13 +5,16 @@ import {
   WizardContextWizard,
   WizardSessionData,
 } from 'telegraf/typings/scenes';
-import * as tg from 'telegraf/typings/core/types/typegram';
+import * as tt from 'telegraf/typings/core/types/typegram';
 import { Deunionize } from 'telegraf/typings/deunionize';
 import { MountMap } from 'telegraf/typings/telegram-types';
 
 import { BotTarget } from './app.interface';
 
-type ISessionState = {} & BotTarget;
+export type ISessionState = {
+  startAt?: Date;
+  isBlockedBot?: boolean;
+} & BotTarget;
 
 type SceneSession = {
   state: any;
@@ -42,16 +45,21 @@ type CombinedContext = {
 
 export type IContext<
   T = {},
-  U extends Deunionize<tg.Update> = tg.Update,
+  U extends Deunionize<tt.Update> = tt.Update,
 > = CombinedContext & Context<U> & T;
 
+export type INarrowedContext<
+  U extends tt.Update = tt.Update,
+  T = {},
+> = CombinedContext & Context<U> & Omit<U, keyof Context> & T;
+
 export type ITextMessageContext<T = {}> = CombinedContext &
-  NarrowedContext<Context<tg.Update>, MountMap['text']> &
+  NarrowedContext<Context<tt.Update>, MountMap['text']> &
   T;
-export type IMessageContext<T = {}> = IContext<T, tg.Update.MessageUpdate>;
+export type IMessageContext<T = {}> = IContext<T, tt.Update.MessageUpdate>;
 export type ICallbackQueryContext<T = {}> = IContext<
   T,
-  tg.Update.CallbackQueryUpdate
+  tt.Update.CallbackQueryUpdate
 >;
 export type ICbQOrMsg = IMessageContext | ICallbackQueryContext;
 

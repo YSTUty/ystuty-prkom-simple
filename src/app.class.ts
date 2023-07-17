@@ -2,10 +2,10 @@ import axios from 'axios';
 import * as _ from 'lodash';
 
 import * as xEnv from './environment';
-import { bot, notifyAdmin, redisSession } from './bot';
+import { bot, botCatchException, notifyAdmin, redisSession } from './bot';
 import {
   AbiturientInfoStateType,
-  BotTarget,
+  ISessionState,
   LastAbiturientInfo,
   AbiturientInfoResponse,
   NotifyType,
@@ -49,9 +49,9 @@ export class App {
     return session;
   }
 
-  public async setTarget(id: number, session: any) {
+  public setTarget(id: number, session: any) {
     const key = `session:${id}:${id}`;
-    redisSession.saveSession(key, session);
+    return redisSession.saveSession(key, session);
   }
 
   public async getTargets(ids: number[] = null) {
@@ -78,7 +78,7 @@ export class App {
         ...(sessions[index] && { [id]: sessions[index] }),
       }),
       {},
-    ) as Record<number, BotTarget>;
+    ) as Record<number, ISessionState>;
   }
 
   public async checkVersion() {
@@ -284,6 +284,7 @@ export class App {
                       xEnv.TELEGRAM_CHAT_ID,
                       ...targetEntries.map(
                         ([chatId, session]) =>
+                          session.isBlockedBot !== true &&
                           session.uid === uid &&
                           (!session.notifyType ||
                             session.notifyType !== NotifyType.Disabled) &&
@@ -332,7 +333,11 @@ export class App {
                           });
                         }
                       })
-                      .catch(console.error);
+                      .catch(async (err) => {
+                        if (!(await botCatchException(err, chatId))) {
+                          console.error(err);
+                        }
+                      });
                   }
                 }
 
