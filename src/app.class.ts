@@ -283,8 +283,6 @@ export class App {
               if (
                 'scoreExam' in lastItem &&
                 'scoreExam' in item &&
-                // TODO: remove it (after update update server)
-                lastItem.scoreExam !== 4 &&
                 lastItem.scoreExam !== item.scoreExam
               ) {
                 isImportant = true;
