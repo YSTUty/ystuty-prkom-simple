@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.3](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.3.2...v1.3.3) (2023-07-19)
+
+
+### 🚀 Features
+
+* **app:** add metric by prometheus ([cd71c00](https://github.com/ystuty/ystuty-prkom-simple/commit/cd71c00b81c65dc4d28c5477f20a9ea15c27a2a2))
+* **bot:** add interception bot blocking ([90424a6](https://github.com/ystuty/ystuty-prkom-simple/commit/90424a6103f67b0ad659d6b41e3b3a601e940be5))
+
+
+### 🐛 Bug Fixes
+
+* **bot:** inc counter on chat new user ([bb2cd50](https://github.com/ystuty/ystuty-prkom-simple/commit/bb2cd50d38e4bf34e13a6992daaf4020fbd55aaf))
+
+
+### 🧹 Chore
+
+* **app:** server fix `scoreExam` ([331fa86](https://github.com/ystuty/ystuty-prkom-simple/commit/331fa86ab3301a4942d9ed09aedebcf9379490f3))
+* **prometheus:** add gateway catch error ([fbbd7fc](https://github.com/ystuty/ystuty-prkom-simple/commit/fbbd7fc46c0bb2cd895fd71955763b81a5a53cb9))
+
+
+### 💙 Types
+
+* update `prkom` types ([22779ad](https://github.com/ystuty/ystuty-prkom-simple/commit/22779ad6972c9dc501a3f0836bc9efe71df50417))
+
 ### [1.3.2](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.3.1...v1.3.2) (2023-07-14)
 
 
