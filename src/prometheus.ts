@@ -17,9 +17,12 @@ register.registerMetric(userCounter);
 const jobName = 'telegram_bot_metrics';
 
 export const pushMetricsToGateway = () => {
-  gateway.pushAdd({ jobName }).then((response) => {
-    // console.log('Metrics pushed to the Pushgateway', response.body);
-  });
+  gateway
+    .pushAdd({ jobName })
+    .then((response) => {
+      // console.log('Metrics pushed to the Pushgateway', response.body);
+    })
+    .catch((err) => console.log('[pushMetricsToGateway] Error', err));
 };
 
 let interval: NodeJS.Timeout = null;
