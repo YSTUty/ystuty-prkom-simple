@@ -53,6 +53,24 @@ export type IncomingsLink = {
        * @example `232_Stroitelstvo_ZFO_platno_PO.html`
        */
       filename: string;
+      /**
+       * Количество мест
+       *
+       * @example 15
+       */
+      countPlaces: number;
+      /**
+       * Количество заявлений
+       *
+       * @example 8
+       */
+      countApplications: number;
+      /**
+       * Количество зачислений
+       *
+       * @example 0
+       */
+      countEnrolled: number;
     }[];
   }[];
 };
@@ -147,8 +165,10 @@ export type IncomingsPageInfo = {
 };
 
 export type AbiturientInfo = AbiturientInfo_Bachelor | AbiturientInfo_Magister;
+export type AbiturientInfoComb = AbiturientInfo_Bachelor &
+  AbiturientInfo_Magister;
 
-type AbiturientInfo_Base = {
+export type AbiturientInfo_Base = {
   /** Выделен зеленым */
   isGreen: boolean;
   /** Выделен красным */
@@ -157,53 +177,34 @@ type AbiturientInfo_Base = {
   position: number;
   /** Уникальный код */
   uid: string;
+  /** Сумма баллов */
+  totalScore: number;
+  /** Сумма баллов по предметам */
+  scoreSubjectsSum: number;
+  /** Сумма баллов за инд. дост. (конкурсные) */
+  scoreCompetitive: number;
+  /** Преимущ. право */
+  preemptiveRight: boolean;
   /** Оригинал в ВУЗе */
   originalInUniversity: boolean;
   /** Оригинал из ЕПГУ */
   originalFromEGPU: boolean;
+  /** Состояние */
+  state: AbiturientInfoStateType | null;
+  /** Приоритет */
+  priority: number;
+  /** Высший приоритет */
+  priorityHight: number;
 };
 
 /** Информация заявления (на бакалавриат и специалитет) */
 export type AbiturientInfo_Bachelor = AbiturientInfo_Base & {
-  /** Сумма баллов */
-  totalScore: number;
-  /** Сумма баллов по предметам */
-  scoreSubjectsSum: number;
   /** Баллы по предметам (балл и название предмета) */
   scoreSubjects: [number, string][];
-  // scoreSubjects: number[];
-  /** Сумма баллов за инд. дост. (конкурсные) */
-  scoreCompetitive: number;
-  /** Преимущ. право */
-  preemptiveRight: boolean;
-  /** Состояние */
-  state: AbiturientInfoStateType | null;
-  /** Приоритет */
-  priority: number;
-  /** Высший приоритет */
-  priorityHight: number;
 };
 
 /** Информация заявления (на магистратуру и аспирантуру) */
 export type AbiturientInfo_Magister = AbiturientInfo_Base & {
-  /** Сумма баллов */
-  totalScore: number;
-  /** Сумма баллов по предметам */
-  scoreSubjectsSum: number;
   /** Вступительное испытание */
   scoreExam: number;
-  // scoreInterview: number;
-  /** Сумма баллов за инд. дост. (конкурсные) */
-  scoreCompetitive: number;
-  /** Преимущ. право */
-  preemptiveRight: boolean;
-  // consentTransfer: boolean;
-  // original: boolean;
-  // consentToanotherDirection: boolean;
-  /** Состояние */
-  state: AbiturientInfoStateType | null;
-  /** Приоритет */
-  priority: number;
-  /** Высший приоритет */
-  priorityHight: number;
 };
