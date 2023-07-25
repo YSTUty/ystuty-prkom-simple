@@ -322,7 +322,9 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       `• Оригинал: <code>${
         item.originalInUniversity || item.originalFromEGPU ? '✅' : '✖️'
       }</code>`,
-      `• Приоритет: <code>${item.priority}/${item.priorityHight}</code>`,
+      `• Приоритет: <code>${item.priority}</code> ${
+        item.isHightPriority ? '<b>(Высший)</b>' : ''
+      }`,
       ...(payload.beforeGreens + payload.afterGreens > 0
         ? [
             ``,
@@ -416,7 +418,9 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       `      ├── Позиция: <code>${posStr}</code> ${greengerEmoji}`,
       `      ├── Сумма баллов: <code>${item.totalScore || 'нету'}</code>`,
       `      ├── Оригинал: <code>${originalInEmoji}</code>`,
-      `      └── Приоритет: <code>${item.priority}/${item.priorityHight}</code>`,
+      `      └── Приоритет: <code>${item.priority} ${
+        item.isHightPriority ? '<b>(Высший)</b>' : ''
+      }</code>`,
       ...(payload.beforeGreens + payload.afterGreens > 0
         ? [
             ``,

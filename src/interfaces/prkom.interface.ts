@@ -193,8 +193,8 @@ export type AbiturientInfo_Base = {
   state: AbiturientInfoStateType | null;
   /** Приоритет */
   priority: number;
-  /** Высший приоритет */
-  priorityHight: number;
+  /** Это высший приоритет */
+  isHightPriority: boolean;
 };
 
 /** Информация заявления (на бакалавриат и специалитет) */
