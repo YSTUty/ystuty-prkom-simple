@@ -325,8 +325,8 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       `• Оригинал: <code>${
         item.originalInUniversity || item.originalFromEGPU ? '✅' : '✖️'
       }</code>`,
-      `• Приоритет: <code>${item.priority}</code> ${
-        item.isHightPriority ? '<b>(Высший)</b>' : ''
+      `• Приоритет: <code>${item.priority}</code>${
+        item.isHightPriority ? ' <b>(Высший)</b>' : ''
       }`,
       ...(payload.beforeGreens + payload.afterGreens > 0
         ? [
@@ -387,10 +387,17 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
 
   applications.sort((a, b) => a.item.priority - b.item.priority);
 
+  const originalInEmoji =
+    firstApp.item.originalInUniversity || firstApp.item.originalFromEGPU
+      ? '✅'
+      : '✖️';
+
   let message: string[] = [
     `<b>УК</b>: [<code>${uid}</code>]`,
     ``,
-    `• ${utils.taggerSmart(firstApp.originalInfo.buildDate)}`,
+    `📄 ${utils.taggerSmart(firstApp.originalInfo.buildDate)}`,
+    `  ├── Сумма баллов: <code>${firstApp.item.totalScore || 'нету'}</code>`,
+    `  └── Оригинал: <code>${originalInEmoji}</code>`,
   ];
 
   for (const app of res.data) {
@@ -402,28 +409,24 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
 
     const totalSeats = info.numbersInfo.total || null;
     const badPosition = totalSeats && totalSeats - payload.beforeGreens < 1;
-    const originalInEmoji =
-      item.originalInUniversity || item.originalFromEGPU ? '✅' : '✖️';
     const posStr = `${item.position}/${totalSeats}`;
     const greengerEmoji = utils.greenger(
       item.isGreen,
       item.isRed || badPosition,
     );
 
-    message.push(
+    let content = [
       ``,
-      `✦ • · · · · · <a href="${viewLink}">[На сайте]</a> · · · · · • ✦`,
-      `├── ${utils.taggerSep(originalInfo.competitionGroupName)}`,
+      `  ✦ •  · · ··· <a href="${viewLink}">[Посмотреть на сайте]</a>  ··· · ·  •  ✦`,
+      `📃─ ${utils.taggerSep(originalInfo.competitionGroupName)}`,
       `├── ${utils.taggerSmart(originalInfo.formTraining)}`,
       `├── ${utils.taggerSmart(originalInfo.levelTraining)}`,
       `├── ${utils.taggerSmart(originalInfo.basisAdmission)}`,
       `└── ${utils.taggerSmart(originalInfo.numbersInfo)}`,
       `      ├── Позиция: <code>${posStr}</code> ${greengerEmoji}`,
-      `      ├── Сумма баллов: <code>${item.totalScore || 'нету'}</code>`,
-      `      ├── Оригинал: <code>${originalInEmoji}</code>`,
-      `      └── Приоритет: <code>${item.priority} ${
-        item.isHightPriority ? '<b>(Высший)</b>' : ''
-      }</code>`,
+      `      └── Приоритет: <code>${item.priority}</code>${
+        item.isHightPriority ? ' <b>(Высший)</b>' : ''
+      }`,
       ...(payload.beforeGreens + payload.afterGreens > 0
         ? [
             ``,
@@ -431,8 +434,16 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
             `            └── После проходит: <code>${payload.afterGreens}</code> чел.`,
           ]
         : []),
-    );
+    ];
+
+    if ([...message, ...content].join('\n').length > 4096) {
+      await ctx.replyWithHTML(message.join('\n'));
+      message.length = 0;
+    }
+
+    message.push(...content);
   }
+
   await ctx.replyWithHTML(message.join('\n'));
 });
 bot.command('minfo', onShortInfo);
