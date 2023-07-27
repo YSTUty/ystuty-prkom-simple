@@ -12,9 +12,12 @@ export const NODE_ENV: EnvType =
 
 export const CACHE_PATH: string = process.env.CACHE_PATH || './.cache-store';
 
-export const YSTU_URL: string = process.env.YSTU_URL || 'https://www.ystu.ru';
+export const YSTU_PRKOM_URL: string =
+  process.env.YSTU_PRKOM_URL || 'https://ystu.ru/files/prkom_svod';
 export const YSTUTY_PRKOM_URL: string =
-  process.env.YSTUTY_PRKOM_URL || 'http://ystuty_prkom/api';
+  process.env.YSTUTY_PRKOM_URL || 'https://prkom.ystuty.ru';
+export const YSTUTY_PRKOM_API_URL: string =
+  process.env.YSTUTY_PRKOM_API_URL || 'http://ystuty_prkom/api';
 
 export const WATCHING_UIDS: string[] =
   (process.env.WATCHING_UIDS &&

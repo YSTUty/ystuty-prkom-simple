@@ -17,7 +17,7 @@ import { greenger, md5 } from './utils';
 import { userCounter, startMetric } from './prometheus';
 
 export const prkomApi = axios.create({
-  baseURL: xEnv.YSTUTY_PRKOM_URL,
+  baseURL: xEnv.YSTUTY_PRKOM_API_URL,
   timeout: 60e3,
 });
 

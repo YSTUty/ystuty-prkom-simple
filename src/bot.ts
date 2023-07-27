@@ -393,9 +393,9 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
   for (const app of res.data) {
     const { info, originalInfo, item, payload } = app;
 
-    // const textHash = encodeURIComponent(uid).replace(/\-/g, '%2D');
-    const textHash = encodeURIComponent(uid.split('-').pop());
-    const viewLink = `${xEnv.YSTU_URL}/files/prkom_svod/${app.filename}#:~:text=${textHash}`;
+    // const textHash = encodeURIComponent(uid.split('-').pop());
+    // const viewLink = `${xEnv.YSTU_PRKOM_URL}/${app.filename}#:~:text=${textHash}`;
+    const viewLink = `${xEnv.YSTUTY_PRKOM_URL}/${app.filename}?userUid=${uid}`;
 
     const totalSeats = info.numbersInfo.total || null;
     const badPosition = totalSeats && totalSeats - payload.beforeGreens < 1;
