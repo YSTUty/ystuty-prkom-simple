@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.4](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.3.3...v1.3.4) (2023-07-27)
+
+
+### ♻ Reverts
+
+* **app:** remove fix `scoreExam` ([14b1539](https://github.com/ystuty/ystuty-prkom-simple/commit/14b153957f712af0f5a6a32f97fa140ee3d7467f))
+
+
+### 🐛 Bug Fixes
+
+* **bot:** fix error `message is too long` on short info ([21cb07c](https://github.com/ystuty/ystuty-prkom-simple/commit/21cb07c89cbfa92f3d5c66dddf16965fe2a5439f))
+* **bot:** fix link for view file ([99daf9f](https://github.com/ystuty/ystuty-prkom-simple/commit/99daf9f720c30e566cdd4daafc6445e3df3b4fe0))
+
+
+### 🧹 Chore
+
+* **app:** update `isHightPriority` field ([2d249d1](https://github.com/ystuty/ystuty-prkom-simple/commit/2d249d1e4dda5a98bfef80db9b037e75efd38c77))
+* **bot:** add `dump` default cmd type ([12713c6](https://github.com/ystuty/ystuty-prkom-simple/commit/12713c69f907dd08396d76cfb2a7a15b7d7762ea))
+* **bot:** update message on `start` ([b16eb83](https://github.com/ystuty/ystuty-prkom-simple/commit/b16eb83eac58888f8703d9bf55288626282e3fc0))
+* **env:** update environments variable names ([a2d4722](https://github.com/ystuty/ystuty-prkom-simple/commit/a2d4722d95a72d21346c98ed90967b39c0042232))
+
 ### [1.3.3](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.3.2...v1.3.3) (2023-07-19)
 
 
