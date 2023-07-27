@@ -213,6 +213,7 @@ bot.command('dump', async (ctx) => {
   const [, type] = ctx.message.text.split(' ').filter(Boolean);
 
   switch (type?.toLowerCase()) {
+    case undefined:
     case 'full': {
       const targets = await app.getTargets();
       ctx.replyWithDocument({
