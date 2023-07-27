@@ -12,7 +12,7 @@ export const viewFile = (filename: string, uid: string) =>
               // `${xEnv.YSTU_PRKOM_URL}/${filename}?userUid=${uid}#:~:text=${
               //   encodeURIComponent(uid.split('-').pop())
               // }`,
-              `${xEnv.YSTUTY_PRKOM_URL}/${filename}?userUid=${uid}`,
+              `${xEnv.YSTUTY_PRKOM_URL}/view/${filename}?userUid=${uid}`,
             ),
           ]
         : [],
