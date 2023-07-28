@@ -21,7 +21,7 @@ import {
 import * as keyboardFactory from './keyboard.factory';
 import { redisClient } from './redis.service';
 import * as utils from './utils';
-import { userCounter } from './prometheus';
+import { userCounter, tgInfoCounter } from './prometheus';
 
 // if (!xEnv.TELEGRAM_BOT_TOKEN) {
 //   throw new Error('TELEGRAM_BOT_TOKEN is not defined');
@@ -288,6 +288,8 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
     return;
   }
 
+  tgInfoCounter.inc({ bot: ctx.botInfo.username, cmd: 'info' });
+
   const applications = res.data;
   applications.sort((a, b) => a.item.priority - b.item.priority);
 
@@ -384,6 +386,8 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
     );
     return;
   }
+
+  tgInfoCounter.inc({ bot: ctx.botInfo.username, cmd: 'short_info' });
 
   const applications = res.data;
   const firstApp = applications.at(0);

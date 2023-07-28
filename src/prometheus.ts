@@ -1,4 +1,4 @@
-import { Gauge, register, Pushgateway } from 'prom-client';
+import { Gauge, register, Pushgateway, Counter } from 'prom-client';
 import * as xEnv from './environment';
 
 export const gateway = xEnv.PROMETHEUS_PUSHGATEWAY_URL
@@ -10,9 +10,15 @@ export const userCounter = new Gauge({
   name: 'telegram_bot_users_count',
   help: 'Total number of new users in the Telegram bot',
   labelNames: ['bot'],
+  registers: [register],
 });
 
-register.registerMetric(userCounter);
+export const tgInfoCounter = new Counter({
+  name: 'telegram_bot_used_info_total',
+  help: 'Count use info commands',
+  labelNames: ['bot', 'cmd'],
+  registers: [register],
+});
 
 const jobName = 'telegram_bot_metrics';
 
