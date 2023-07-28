@@ -305,7 +305,7 @@ export class App {
                           (session.notifyType == NotifyType.All ||
                             (session.notifyType === NotifyType.Important &&
                               isImportant)) &&
-                          chatId,
+                          Number(chatId),
                       ),
                     ].filter(Boolean),
                   );
