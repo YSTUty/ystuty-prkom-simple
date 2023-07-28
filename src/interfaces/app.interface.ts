@@ -11,8 +11,9 @@ export type AbiturientInfoResponse = {
   item: AbiturientInfo;
   filename: string;
   payload: {
-    afterGreens: number;
+    beforeOriginals: number;
     beforeGreens: number;
+    afterGreens: number;
     totalItems: number;
   };
 };

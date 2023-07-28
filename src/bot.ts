@@ -304,10 +304,14 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       `• ${utils.taggerSmart(originalInfo.basisAdmission)}`,
       `• ${utils.taggerSmart(originalInfo.numbersInfo)}`,
       ``,
+      `• Приоритет: <code>${item.priority}</code>${
+        item.isHightPriority ? ' <b>(Высший)</b>' : ''
+      }`,
       `• Позиция: <code>${item.position}/${totalSeats}</code> ${utils.greenger(
         item.isGreen,
         item.isRed || (totalSeats && totalSeats - payload.beforeGreens < 1),
       )}`,
+      `• Позиция по оригиналам: <code>${payload.beforeOriginals + 1}</code>`,
       `• Сумма баллов: <code>${item.totalScore || 'нету'}</code>`,
       ...('scoreExam' in item
         ? [`• Баллы за экзамен: <code>${item.scoreExam || 'нету'}</code>`]
@@ -326,12 +330,10 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       `• Оригинал: <code>${
         item.originalInUniversity || item.originalFromEGPU ? '✅' : '✖️'
       }</code>`,
-      `• Приоритет: <code>${item.priority}</code>${
-        item.isHightPriority ? ' <b>(Высший)</b>' : ''
-      }`,
+      ``,
       ...(payload.beforeGreens + payload.afterGreens > 0
         ? [
-            ``,
+            `• Итоговая позиция: <code>${payload.beforeGreens + 1}</code>`,
             `• До проходит: <code>${payload.beforeGreens}</code> чел.`,
             `• После проходит: <code>${payload.afterGreens}</code> чел.`,
           ]
@@ -424,13 +426,18 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       `├── ${utils.taggerSmart(originalInfo.levelTraining)}`,
       `├── ${utils.taggerSmart(originalInfo.basisAdmission)}`,
       `└── ${utils.taggerSmart(originalInfo.numbersInfo)}`,
-      `      ├── Позиция: <code>${posStr}</code> ${greengerEmoji}`,
-      `      └── Приоритет: <code>${item.priority}</code>${
+      `      ├── Приоритет: <code>${item.priority}</code>${
         item.isHightPriority ? ' <b>(Высший)</b>' : ''
       }`,
+      `      ├── Позиция по оригиналам: <code>${
+        payload.beforeOriginals + 1
+      }</code>`,
+      `      └── Позиция: <code>${posStr}</code> ${greengerEmoji}`,
       ...(payload.beforeGreens + payload.afterGreens > 0
         ? [
-            ``,
+            `         └── Итоговая позиция: <code>${
+              payload.beforeGreens + 1
+            }</code>`,
             `            ├── До проходит: <code>${payload.beforeGreens}</code> чел.`,
             `            └── После проходит: <code>${payload.afterGreens}</code> чел.`,
           ]
