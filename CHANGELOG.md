@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.5](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.3.4...v1.3.5) (2023-07-28)
+
+
+### 🧹 Chore
+
+* **app:** make all chat ids to number ([c9f55a2](https://github.com/ystuty/ystuty-prkom-simple/commit/c9f55a2e9612040593ee6058575e3b4b5135505a))
+* **bot:** add `beforeOriginals` field to info ([66a8828](https://github.com/ystuty/ystuty-prkom-simple/commit/66a88285f0e05c0f6c819f9c20b7142bca7dbe52))
+
+
+### 🚀 Features
+
+* **prometheus:** add `tgInfoCounter` for  info command usage counter ([c195b12](https://github.com/ystuty/ystuty-prkom-simple/commit/c195b122ffdc4d64b923fa416d61f72a686a2fa4))
+
 ### [1.3.4](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.3.3...v1.3.4) (2023-07-27)
 
 
