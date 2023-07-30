@@ -295,7 +295,7 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
 
   for (const app of applications) {
     const { info, originalInfo, item, payload } = app;
-    const totalSeats = info.numbersInfo.total || null;
+    const totalSeats = info.numbersInfo.total ?? 0;
     const message = [
       `<b>УК</b>: [<code>${item.uid}</code>]`,
       ``,
@@ -309,10 +309,13 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       `• Приоритет: <code>${item.priority}</code>${
         item.isHightPriority ? ' <b>(Высший)</b>' : ''
       }`,
-      `• Позиция: <code>${item.position}/${totalSeats}</code> ${utils.greenger(
+      `• Состояние: <code>${utils.getAbiturientInfoStateString(
+        item.state,
+      )}</code> ${utils.getStatusColor(
         item.isGreen,
         item.isRed || (totalSeats && totalSeats - payload.beforeGreens < 1),
       )}`,
+      `• Позиция: <code>${item.position}/${totalSeats}</code>`,
       `• Позиция по оригиналам: <code>${payload.beforeOriginals + 1}</code>`,
       `• Сумма баллов: <code>${item.totalScore || 'нету'}</code>`,
       ...('scoreExam' in item
@@ -414,10 +417,10 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
     // const viewLink = `${xEnv.YSTU_PRKOM_URL}/${app.filename}#:~:text=${textHash}`;
     const viewLink = `${xEnv.YSTUTY_PRKOM_URL}/view/${app.filename}?userUid=${uid}`;
 
-    const totalSeats = info.numbersInfo.total || null;
+    const totalSeats = info.numbersInfo.total ?? 0;
     const badPosition = totalSeats && totalSeats - payload.beforeGreens < 1;
     const posStr = `${item.position}/${totalSeats}`;
-    const greengerEmoji = utils.greenger(
+    const coloredBallEmoji = utils.getStatusColor(
       item.isGreen,
       item.isRed || badPosition,
     );
@@ -430,13 +433,16 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       `├── ${utils.taggerSmart(originalInfo.levelTraining)}`,
       `├── ${utils.taggerSmart(originalInfo.basisAdmission)}`,
       `└── ${utils.taggerSmart(originalInfo.numbersInfo)}`,
+      `      ├── Состояние: <code>${utils.getAbiturientInfoStateString(
+        item.state,
+      )}</code> ${coloredBallEmoji}`,
       `      ├── Приоритет: <code>${item.priority}</code>${
         item.isHightPriority ? ' <b>(Высший)</b>' : ''
       }`,
       `      ├── Позиция по оригиналам: <code>${
         payload.beforeOriginals + 1
       }</code>`,
-      `      └── Позиция: <code>${posStr}</code> ${greengerEmoji}`,
+      `      └── Позиция: <code>${posStr}</code>`,
       ...(payload.beforeGreens + payload.afterGreens > 0
         ? [
             `         └── Итоговая позиция: <code>${

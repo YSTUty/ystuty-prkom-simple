@@ -1,5 +1,6 @@
 import { createHash } from 'crypto';
 import { RateLimiter as Limiter } from 'limiter';
+import { AbiturientInfoStateType } from './interfaces';
 
 export const md5 = (str: string) => createHash('md5').update(str).digest('hex');
 
@@ -23,14 +24,22 @@ export function MAP_reviver(key, value) {
   return value;
 }
 
-export const greenger = (isGreen: boolean, badPosition = true) =>
-  isGreen || !badPosition ? (!isGreen || badPosition ? '🟡' : '🟢') : '🔴';
+export const getStatusColor = (isGreen: boolean, isBad = true) =>
+  isGreen || !isBad ? (isGreen ? '🟢' : '🟡') : '🔴';
 
 export const taggerSmart = (str: string, tag = 'b') =>
   str.replace(/([^-:.]+)( - |: )([^-:\.]+[^ ]+)/gi, `$1$2<${tag}>$3</${tag}>`);
 
 export const taggerSep = (str: string, tag = 'b') =>
   str.replace(/([^-:]+)( - |: )(.*)$/i, `$1$2<${tag}>$3</${tag}>`);
+
+export const getAbiturientInfoStateString = (val: AbiturientInfoStateType) => {
+  return {
+    [AbiturientInfoStateType.Unknown]: 'Неизвестно',
+    [AbiturientInfoStateType.Submitted]: 'Подано',
+    [AbiturientInfoStateType.Enrolled]: 'Зачислен',
+  }[val];
+};
 
 export class RateLimiter {
   private limiters: Record<number, Limiter> = {};

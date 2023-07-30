@@ -13,7 +13,7 @@ import {
 import { cacheManager } from './cache-manager.util';
 import * as keyboardFactory from './keyboard.factory';
 import { redisClient } from './redis.service';
-import { greenger, md5 } from './utils';
+import { getAbiturientInfoStateString, getStatusColor, md5 } from './utils';
 import { userCounter, startMetric } from './prometheus';
 
 export const prkomApi = axios.create({
@@ -218,11 +218,11 @@ export class App {
 
               if (lastItem.state !== item.state) {
                 changes.push(
-                  `❇️ <b>Состояние</b> изменено (было: <code>${
-                    AbiturientInfoStateType[lastItem.state]
-                  }</code>; стало: <code>${
-                    AbiturientInfoStateType[item.state]
-                  }</code>)`,
+                  `❇️ <b>Состояние</b> изменено (было: <code>${getAbiturientInfoStateString(
+                    lastItem.state,
+                  )}</code>; стало: <code>${getAbiturientInfoStateString(
+                    item.state,
+                  )}</code>)`,
                 );
                 isImportant = true;
                 if (item.state === AbiturientInfoStateType.Enrolled) {
@@ -255,11 +255,11 @@ export class App {
               ) {
                 isImportant = true;
                 changes.push(
-                  `🚀 <b>СТАТУС</b> изменен (было: <code>${greenger(
+                  `🚀 <b>СТАТУС</b> изменен (было: <code>${getStatusColor(
                     lastItem.isGreen,
                     lastItem.isRed ||
                       (lastTotalSeats && lastItem.position > lastTotalSeats),
-                  )}</code>; стало: <code>${greenger(
+                  )}</code>; стало: <code>${getStatusColor(
                     item.isGreen,
                     item.isRed ||
                       (totalSeats && totalSeats - app.payload.beforeGreens < 1),
