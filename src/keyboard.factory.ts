@@ -8,11 +8,22 @@ export const viewFile = (filename: string, uid: string) =>
       filename
         ? [
             Markup.button.url(
-              'Посмотреть на сайте',
-              // `${xEnv.YSTU_PRKOM_URL}/${filename}?userUid=${uid}#:~:text=${
-              //   encodeURIComponent(uid.split('-').pop())
-              // }`,
+              'Посмотреть список (app)',
               `${xEnv.YSTUTY_PRKOM_URL}/view/${filename}?userUid=${uid}`,
+            ),
+          ]
+        : [],
+    ],
+    ...[
+      filename
+        ? [
+            Markup.button.url(
+              'Посмотреть список (html)',
+              `${
+                xEnv.YSTU_PRKOM_URL
+              }/${filename}?userUid=${uid}#:~:text=${encodeURIComponent(
+                uid.split('-').pop(),
+              )}`,
             ),
           ]
         : [],
