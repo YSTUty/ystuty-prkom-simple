@@ -205,6 +205,28 @@ bot.command('app', (ctx) => {
   ctx.reply('see console');
 });
 
+bot.command('opt', async (ctx) => {
+  if (!xEnv.TELEGRAM_ADMIN_IDS.includes(ctx.from.id)) {
+    return;
+  }
+
+  const [, type, state] = ctx.message.text.split(' ').filter(Boolean);
+
+  switch (type?.toLocaleLowerCase()) {
+    case 'pos':
+    case 'showpositions':
+      const newState = await app.toggleShowPositions(
+        state === 'true' ? true : state === 'false' ? false : undefined,
+      );
+      ctx.reply(`showPositions = ${newState}`);
+      break;
+
+    default:
+      ctx.reply('Wrong type. Use /opt [type] (state)');
+      break;
+  }
+});
+
 bot.command('dump', async (ctx) => {
   if (!xEnv.TELEGRAM_ADMIN_IDS.includes(ctx.from.id)) {
     return;
@@ -293,8 +315,8 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
   const applications = res.data;
   applications.sort((a, b) => a.item.priority - b.item.priority);
 
-  for (const app of applications) {
-    const { info, originalInfo, item, payload } = app;
+  for (const application of applications) {
+    const { info, originalInfo, item, payload } = application;
     const totalSeats = info.numbersInfo.total ?? 0;
     const message = [
       `<b>УК</b>: [<code>${item.uid}</code>]`,
@@ -315,8 +337,14 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
         item.isGreen,
         item.isRed || (totalSeats && totalSeats - payload.beforeGreens < 1),
       )}`,
-      `• Позиция: <code>${item.position}/${totalSeats}</code>`,
-      `• Позиция по оригиналам: <code>${payload.beforeOriginals + 1}</code>`,
+      ...(!app.showPositions
+        ? []
+        : [
+            `• Позиция: <code>${item.position}/${totalSeats}</code>`,
+            `• Позиция по оригиналам: <code>${
+              payload.beforeOriginals + 1
+            }</code>`,
+          ]),
       `• Сумма баллов: <code>${item.totalScore || 'нету'}</code>`,
       ...('scoreExam' in item
         ? [`• Баллы за экзамен: <code>${item.scoreExam || 'нету'}</code>`]
@@ -346,7 +374,7 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
     ];
     await ctx.replyWithHTML(
       message.join('\n'),
-      keyboardFactory.viewFile(app.filename, item.uid),
+      keyboardFactory.viewFile(application.filename, item.uid),
     );
   }
 });
@@ -410,12 +438,12 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
     `  └── Оригинал: <code>${originalInEmoji}</code>`,
   ];
 
-  for (const app of res.data) {
-    const { info, originalInfo, item, payload } = app;
+  for (const application of res.data) {
+    const { info, originalInfo, item, payload } = application;
 
     // const textHash = encodeURIComponent(uid.split('-').pop());
     // const viewLink = `${xEnv.YSTU_PRKOM_URL}/${app.filename}#:~:text=${textHash}`;
-    const viewLink = `${xEnv.YSTUTY_PRKOM_URL}/view/${app.filename}?userUid=${uid}`;
+    const viewLink = `${xEnv.YSTUTY_PRKOM_URL}/view/${application.filename}?userUid=${uid}`;
 
     const totalSeats = info.numbersInfo.total ?? 0;
     const badPosition = totalSeats && totalSeats - payload.beforeGreens < 1;
@@ -427,7 +455,7 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
 
     let content = [
       ``,
-      `  ✦ •  · · ··· <a href="${viewLink}">[Посмотреть на сайте]</a>  ··· · ·  •  ✦`,
+      `  ✦  • · ·· <a href="${viewLink}">[Посмотреть на сайте]</a>  ·· · •  ✦`,
       `📃─ ${utils.taggerSep(originalInfo.competitionGroupName)}`,
       `├── ${utils.taggerSmart(originalInfo.formTraining)}`,
       `├── ${utils.taggerSmart(originalInfo.levelTraining)}`,
@@ -436,13 +464,17 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       `      ├── Состояние: <code>${utils.getAbiturientInfoStateString(
         item.state,
       )}</code> ${coloredBallEmoji}`,
-      `      ├── Приоритет: <code>${item.priority}</code>${
-        item.isHightPriority ? ' <b>(Высший)</b>' : ''
-      }`,
-      `      ├── Позиция по оригиналам: <code>${
-        payload.beforeOriginals + 1
-      }</code>`,
-      `      └── Позиция: <code>${posStr}</code>`,
+      `      ${app.showPositions ? '├' : '└'}── Приоритет: <code>${
+        item.priority
+      }</code>${item.isHightPriority ? ' <b>(Высший)</b>' : ''}`,
+      ...(!app.showPositions
+        ? []
+        : [
+            `      ├── Позиция по оригиналам: <code>${
+              payload.beforeOriginals + 1
+            }</code>`,
+            `      └── Позиция: <code>${posStr}</code>`,
+          ]),
       ...(payload.beforeGreens + payload.afterGreens > 0
         ? [
             `         └── Итоговая позиция: <code>${
@@ -455,7 +487,10 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
     ];
 
     if ([...message, ...content].join('\n').length > 4096) {
-      await ctx.replyWithHTML(message.join('\n'));
+      await ctx.replyWithHTML(
+        message.join('\n'),
+        keyboardFactory.main(ctx as IContext),
+      );
       message.length = 0;
     }
 

@@ -27,6 +27,8 @@ const CACHEFILE_LAST_DAT = 'app_setting';
 export class App {
   public lastData = new Map<string, Map<string, LastAbiturientInfo>>();
 
+  public showPositions: boolean;
+
   public async init() {
     await this.load();
     await this.checkVersion();
@@ -43,7 +45,21 @@ export class App {
     }
 
     startMetric();
+    this.showPositions =
+      (await redisClient.get('app:options:showPositions')) === 'true';
+
     this.runWatcher().then();
+  }
+
+  public async toggleShowPositions(state?: boolean) {
+    state ??= (await redisClient.get('app:options:showPositions')) === 'true';
+    this.showPositions = !state;
+
+    await redisClient.set(
+      'app:options:showPositions',
+      String(this.showPositions),
+    );
+    return this.showPositions;
   }
 
   public async getTargetKeys() {
@@ -231,7 +247,7 @@ export class App {
               }
 
               const posDif = lastItem.position - item.position;
-              if (posDif !== 0) {
+              if (this.showPositions && posDif !== 0) {
                 if (posDif > 0) {
                   isImportant = true;
                 }
