@@ -155,18 +155,28 @@ export class App {
       const uids = _.uniq(
         [...xEnv.WATCHING_UIDS, ...targetUids].filter(Boolean),
       );
+      const { data: list } = await prkomApi.get<AbiturientInfoResponse[]>(
+        `/v1/admission/get_many?original=true&uids=${uids.join(',')}`,
+        // `/v1/admission/get/fake?original=true`,
+      );
+
+      const mapList = new Map<string, Map<string, AbiturientInfoResponse>>();
+
+      for (const info of list) {
+        const { uid } = info.item;
+        if (!mapList.has(uid)) {
+          mapList.set(uid, new Map());
+        }
+        mapList.get(uid).set(info.filename, info);
+      }
+
       for (const uid of uids) {
         try {
-          const { data: list } = await prkomApi.get<AbiturientInfoResponse[]>(
-            `/v1/admission/get/${uid}?original=true`,
-            // `/v1/admission/get/fake?original=true`,
-          );
-
-          if (list.length === 0) {
-            for (const [, v] of targetEntries) {
-              if (v.uid === uid) {
-                if ((v.loadCount = (v.loadCount || 0) + 1) > 3) {
-                  v.uid = null;
+          if (!mapList.has(uid)) {
+            for (const [, session] of targetEntries) {
+              if (session.uid === uid) {
+                if ((session.loadCount = (session.loadCount || 0) + 1) > 3) {
+                  session.uid = null;
                   this.lastData.delete(uid);
                 }
               }
@@ -179,7 +189,7 @@ export class App {
             this.lastData.set(uid, apps);
           }
 
-          for (const app of list) {
+          for (const app of mapList.get(uid).values()) {
             const { originalInfo, info, item } = app;
 
             const apps = this.lastData.get(uid);
