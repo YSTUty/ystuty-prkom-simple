@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.6](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.3.5...v1.3.6) (2023-08-02)
+
+
+### 🚀 Features
+
+* **app:** add `showPositions` option ([e350a31](https://github.com/ystuty/ystuty-prkom-simple/commit/e350a3162d4dc134b554428016900d6fa838488d))
+* **bot:** add display state with locale ([038c009](https://github.com/ystuty/ystuty-prkom-simple/commit/038c009876bf12e6f3d900bec862efabc0405f95))
+
+
+### 🧹 Chore
+
+* **app:** optimizing multiple queries into one ([b79b859](https://github.com/ystuty/ystuty-prkom-simple/commit/b79b859bad0d6710625ed4fedbea90e0d13fbf25))
+* **bot:** add ystu list link btn to keyboard ([ec31f1f](https://github.com/ystuty/ystuty-prkom-simple/commit/ec31f1fbe91bd1b7f22dbf09651f8d4be7a2a666))
+
+
+### 🌟 Feature Improvements
+
+* **app:** split many uids to chunks ([0aa90e0](https://github.com/ystuty/ystuty-prkom-simple/commit/0aa90e083b40a0cef2053d86a82e184accfadbca))
+
 ### [1.3.5](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.3.4...v1.3.5) (2023-07-28)
 
 
