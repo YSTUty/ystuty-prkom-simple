@@ -24,6 +24,9 @@ export const prkomApi = axios.create({
 // TODO: rename ii
 const CACHEFILE_LAST_DAT = 'app_setting';
 
+// !!
+const testFake = false;
+
 export class App {
   public lastData = new Map<string, Map<string, LastAbiturientInfo>>();
 
@@ -48,7 +51,7 @@ export class App {
     this.showPositions =
       (await redisClient.get('app:options:showPositions')) === 'true';
 
-    this.runWatcher().then();
+    this.runWatcherSafe().then();
   }
 
   public async toggleShowPositions(state?: boolean) {
@@ -144,267 +147,287 @@ export class App {
     );
   }
 
-  public async runWatcher() {
+  public async runWatcherSafe() {
     do {
       console.log(new Date().toLocaleString(), '[runWatcher] execute');
 
-      const targets = await this.getTargets();
-      const targetEntries = Object.entries(targets);
-      const targetUids = targetEntries.flatMap(([, v]) => v.uid);
-
-      const uids = _.uniq(
-        [...xEnv.WATCHING_UIDS, ...targetUids].filter(Boolean),
-      );
-      const { data: list } = await prkomApi.get<AbiturientInfoResponse[]>(
-        `/v1/admission/get_many?original=true&uids=${uids.join(',')}`,
-        // `/v1/admission/get/fake?original=true`,
-      );
-
-      const mapList = new Map<string, Map<string, AbiturientInfoResponse>>();
-
-      for (const info of list) {
-        const { uid } = info.item;
-        if (!mapList.has(uid)) {
-          mapList.set(uid, new Map());
+      try {
+        const targets = await this.getTargets();
+        const targetEntries = Object.entries(targets);
+        const targetUids = targetEntries.flatMap(([, v]) => v.uid);
+        const uids = _.uniq(
+          [...xEnv.WATCHING_UIDS, ...targetUids].filter(Boolean),
+        );
+        if (testFake) {
+          uids.push(...Array.from({ length: 1500 }, () => '123-456-789 00'));
         }
-        mapList.get(uid).set(info.filename, info);
-      }
 
-      for (const uid of uids) {
-        try {
-          if (!mapList.has(uid)) {
-            for (const [, session] of targetEntries) {
-              if (session.uid === uid) {
-                if ((session.loadCount = (session.loadCount || 0) + 1) > 3) {
-                  session.uid = null;
-                  this.lastData.delete(uid);
-                }
-              }
-            }
-            continue;
-          }
-
-          if (!this.lastData.has(uid)) {
-            const apps = new Map<string, LastAbiturientInfo>();
-            this.lastData.set(uid, apps);
-          }
-
-          for (const app of mapList.get(uid).values()) {
-            const { originalInfo, info, item } = app;
-
-            const apps = this.lastData.get(uid);
-            // TODO: use hashName = md5(app.filename);
-            const hashName = md5(
-              [
-                originalInfo.competitionGroupName,
-                originalInfo.formTraining,
-                originalInfo.levelTraining,
-                originalInfo.directionTraining,
-                originalInfo.basisAdmission,
-                originalInfo.sourceFunding,
-              ].join(';'),
-            );
-
-            if (apps.has(hashName)) {
-              const { info: lastInfo, item: lastItem } = apps.get(hashName);
-
-              let isImportant = false;
-              let isNewEnrolled = false;
-              const changes: string[] = [];
-
-              const lastTotalSeats = lastInfo.numbersInfo.total || null;
-              const totalSeats = info.numbersInfo.total || null;
-
-              if (lastInfo.numbersInfo.total !== info.numbersInfo.total) {
-                changes.push(
-                  `💺 <b>МЕСТА</b> изменны (было всего мест: <code>${lastInfo.numbersInfo.total}</code>;` +
-                    ` стало всего мест: <code>${info.numbersInfo.total}</code>)`,
-                );
-              } else if (
-                lastInfo.numbersInfo.enrolled !== info.numbersInfo.enrolled
-              ) {
-                if (!item.isGreen) {
-                  isImportant = true;
-                }
-                changes.push(
-                  `💺 <b>МЕСТА</b> изменны (было зачислено: <code>${lastInfo.numbersInfo.enrolled}</code>;` +
-                    ` стало зачислено: <code>${info.numbersInfo.enrolled}</code>)`,
-                );
-              } else if (
-                lastInfo.numbersInfo.toenroll !== info.numbersInfo.toenroll
-              ) {
-                if (!item.isGreen) {
-                  isImportant = true;
-                }
-                changes.push(
-                  `💺 <b>МЕСТА</b> изменны (было к зачислению: <code>${lastInfo.numbersInfo.toenroll}</code>;` +
-                    ` стало к зачислению: <code>${info.numbersInfo.toenroll}</code>)`,
-                );
-              }
-
-              if (lastItem.state !== item.state) {
-                changes.push(
-                  `❇️ <b>Состояние</b> изменено (было: <code>${getAbiturientInfoStateString(
-                    lastItem.state,
-                  )}</code>; стало: <code>${getAbiturientInfoStateString(
-                    item.state,
-                  )}</code>)`,
-                );
-                isImportant = true;
-                if (item.state === AbiturientInfoStateType.Enrolled) {
-                  isNewEnrolled = true;
-                }
-              }
-
-              const posDif = lastItem.position - item.position;
-              if (this.showPositions && posDif !== 0) {
-                if (posDif > 0) {
-                  isImportant = true;
-                }
-                changes.push(
-                  `🍥 <b>ПОЗИЦИЯ</b> изменена ${
-                    posDif > 0 ? '👍' : '👎'
-                  } (было: <code>${lastItem.position}</code>; стало: <code>${
-                    item.position
-                  }</code>)`,
-                );
-              }
-
-              if (
-                !isNewEnrolled &&
-                ((lastItem.isGreen !== null &&
-                  lastItem.isGreen !== item.isGreen) ||
-                  (lastItem.isRed !== null && lastItem.isRed !== item.isRed) ||
-                  (lastTotalSeats &&
-                    totalSeats &&
-                    lastTotalSeats !== totalSeats))
-              ) {
-                isImportant = true;
-                changes.push(
-                  `🚀 <b>СТАТУС</b> изменен (было: <code>${getStatusColor(
-                    lastItem.isGreen,
-                    lastItem.isRed ||
-                      (lastTotalSeats && lastItem.position > lastTotalSeats),
-                  )}</code>; стало: <code>${getStatusColor(
-                    item.isGreen,
-                    item.isRed ||
-                      (totalSeats && totalSeats - app.payload.beforeGreens < 1),
-                  )}</code>)`,
-                );
-              }
-
-              if (lastItem.totalScore !== item.totalScore) {
-                isImportant = true;
-                changes.push(
-                  `🌟 <b>СУММА БАЛЛОВ</b> изменена (было: <code>${lastItem.totalScore}</code>; стало: <code>${item.totalScore}</code>)`,
-                );
-              }
-
-              // if (lastItem.scoreInterview !== item.scoreInterview) {
-              //   changes.push(
-              //     `⭐️ <b>БАЛЛЫ СОБЕСА</b> изменены (было: <code>${lastItem.scoreInterview}</code>; стало: <code>${item.scoreInterview}</code>)`,
-              //   );
-              // }
-
-              if (
-                'scoreExam' in lastItem &&
-                'scoreExam' in item &&
-                lastItem.scoreExam !== item.scoreExam
-              ) {
-                isImportant = true;
-                changes.push(
-                  `❇️ <b>БАЛЛЫ ЭКЗА</b> изменены (было: <code>${lastItem.scoreExam}</code>; стало: <code>${item.scoreExam}</code>)`,
-                );
-              }
-
-              if (changes.length > 0) {
-                if (bot) {
-                  const chatIds = _.uniq(
-                    [
-                      xEnv.TELEGRAM_CHAT_ID,
-                      ...targetEntries.map(
-                        ([chatId, session]) =>
-                          session.isBlockedBot !== true &&
-                          session.uid === uid &&
-                          (!session.notifyType ||
-                            session.notifyType !== NotifyType.Disabled) &&
-                          (session.notifyType == NotifyType.All ||
-                            (session.notifyType === NotifyType.Important &&
-                              isImportant)) &&
-                          Number(chatId),
-                      ),
-                    ].filter(Boolean),
-                  );
-
-                  for (const chatId of chatIds) {
-                    bot.telegram
-                      .sendMessage(
-                        chatId,
-                        `${[
-                          `🦄 <b>(CHANGES DETECTED)</b>`,
-                          `<b>УК</b>: [<code>${uid}</code>]`,
-                          ``,
-                          `<b>• ${originalInfo.competitionGroupName}</b>`,
-                          `<b>• ${originalInfo.formTraining}</b>`,
-                          `<b>• ${originalInfo.buildDate}</b>`,
-                          `<b>• ${originalInfo.numbersInfo}</b>`,
-                          ``,
-                          `Изменения:`,
-                          ...changes,
-                        ].join('\n')}`,
-                        {
-                          parse_mode: 'HTML',
-                          ...keyboardFactory.viewFile(app.filename, uid),
-                        },
-                      )
-                      .then(() => {
-                        if (isNewEnrolled) {
-                          bot.telegram.sendMessage(chatId, `🎉`).then((e) => {
-                            bot.telegram.sendMessage(
-                              chatId,
-                              `🦄 <b>(HAPPY)</b>\n` +
-                                `УК: [<code>${uid}</code>]\n` +
-                                `🎉 Поздравляем с зачилением!`,
-                              {
-                                parse_mode: 'HTML',
-                                reply_to_message_id: e.message_id,
-                              },
-                            );
-                          });
-                        }
-                      })
-                      .catch(async (err) => {
-                        if (!(await botCatchException(err, chatId))) {
-                          console.error(err);
-                        }
-                      });
-                  }
-                }
-
-                console.log(
-                  new Date().toLocaleString(),
-                  `(CHANGES) [${uid}] 🚨 Detected changes on "${info.competitionGroupName}"`,
-                );
-                // console.log(changes.join('\n'));
-              }
-            }
-
-            delete app.originalInfo;
-            // update last data
-            apps.set(hashName, app);
-          }
-
-          await new Promise((resolve) => setImmediate(resolve));
-        } catch (error) {
-          console.error(error);
+        for (const arr of _.chunk(uids, 400)) {
+          await this.runWatcher(arr, targetEntries);
         }
+      } catch (err) {
+        console.error(err);
+        notifyAdmin(`[Error] runWatcher: ${err.message}`);
       }
 
       this.save().then();
 
       console.log(new Date().toLocaleString(), '[runWatcher] delay 2 minutes');
       await new Promise((resolve) => setTimeout(resolve, 2 * 60 * 1e3));
+
+      await new Promise((resolve) => setImmediate(resolve));
     } while (true);
+  }
+
+  protected async runWatcher(
+    uids: string[],
+    targetEntries: [string, ISessionState][],
+  ) {
+    const { data: list } = await prkomApi.get<AbiturientInfoResponse[]>(
+      testFake
+        ? `/v1/admission/get_many?original=true&uids=${uids.join(',')}`
+        : `/v1/admission/get/fake?original=true&uids=${uids.join(',')}`,
+    );
+
+    const mapList = new Map<string, Map<string, AbiturientInfoResponse>>();
+
+    for (const info of list) {
+      const { uid } = info.item;
+      if (!mapList.has(uid)) {
+        mapList.set(uid, new Map());
+      }
+      mapList.get(uid).set(info.filename, info);
+    }
+
+    for (const uid of uids) {
+      try {
+        if (!mapList.has(uid)) {
+          for (const [, session] of targetEntries) {
+            if (session.uid === uid) {
+              if ((session.loadCount = (session.loadCount || 0) + 1) > 3) {
+                session.uid = null;
+                this.lastData.delete(uid);
+              }
+            }
+          }
+          continue;
+        }
+
+        if (!this.lastData.has(uid)) {
+          const apps = new Map<string, LastAbiturientInfo>();
+          this.lastData.set(uid, apps);
+        }
+
+        for (const app of mapList.get(uid).values()) {
+          const { originalInfo, info, item } = app;
+          if (!originalInfo) continue;
+          const apps = this.lastData.get(uid);
+          // TODO: use hashName = md5(app.filename);
+          const hashName = md5(
+            [
+              originalInfo.competitionGroupName,
+              originalInfo.formTraining,
+              originalInfo.levelTraining,
+              originalInfo.directionTraining,
+              originalInfo.basisAdmission,
+              originalInfo.sourceFunding,
+            ].join(';'),
+          );
+
+          if (apps.has(hashName)) {
+            const { info: lastInfo, item: lastItem } = apps.get(hashName);
+
+            let isImportant = false;
+            let isNewEnrolled = false;
+            const changes: string[] = [];
+
+            const lastTotalSeats = lastInfo.numbersInfo.total || null;
+            const totalSeats = info.numbersInfo.total || null;
+
+            if (lastInfo.numbersInfo.total !== info.numbersInfo.total) {
+              changes.push(
+                `💺 <b>МЕСТА</b> изменны (было всего мест: <code>${lastInfo.numbersInfo.total}</code>;` +
+                  ` стало всего мест: <code>${info.numbersInfo.total}</code>)`,
+              );
+            } else if (
+              lastInfo.numbersInfo.enrolled !== info.numbersInfo.enrolled
+            ) {
+              if (!item.isGreen) {
+                isImportant = true;
+              }
+              changes.push(
+                `💺 <b>МЕСТА</b> изменны (было зачислено: <code>${lastInfo.numbersInfo.enrolled}</code>;` +
+                  ` стало зачислено: <code>${info.numbersInfo.enrolled}</code>)`,
+              );
+            } else if (
+              lastInfo.numbersInfo.toenroll !== info.numbersInfo.toenroll
+            ) {
+              if (!item.isGreen) {
+                isImportant = true;
+              }
+              changes.push(
+                `💺 <b>МЕСТА</b> изменны (было к зачислению: <code>${lastInfo.numbersInfo.toenroll}</code>;` +
+                  ` стало к зачислению: <code>${info.numbersInfo.toenroll}</code>)`,
+              );
+            }
+
+            if (lastItem.state !== item.state) {
+              changes.push(
+                `❇️ <b>Состояние</b> изменено (было: <code>${getAbiturientInfoStateString(
+                  lastItem.state,
+                )}</code>; стало: <code>${getAbiturientInfoStateString(
+                  item.state,
+                )}</code>)`,
+              );
+              isImportant = true;
+              if (item.state === AbiturientInfoStateType.Enrolled) {
+                isNewEnrolled = true;
+              }
+            }
+
+            const posDif = lastItem.position - item.position;
+            if (this.showPositions && posDif !== 0) {
+              if (posDif > 0) {
+                isImportant = true;
+              }
+              changes.push(
+                `🍥 <b>ПОЗИЦИЯ</b> изменена ${
+                  posDif > 0 ? '👍' : '👎'
+                } (было: <code>${lastItem.position}</code>; стало: <code>${
+                  item.position
+                }</code>)`,
+              );
+            }
+
+            if (
+              !isNewEnrolled &&
+              ((lastItem.isGreen !== null &&
+                lastItem.isGreen !== item.isGreen) ||
+                (lastItem.isRed !== null && lastItem.isRed !== item.isRed) ||
+                (lastTotalSeats && totalSeats && lastTotalSeats !== totalSeats))
+            ) {
+              isImportant = true;
+              changes.push(
+                `🚀 <b>СТАТУС</b> изменен (было: <code>${getStatusColor(
+                  lastItem.isGreen,
+                  lastItem.isRed ||
+                    (lastTotalSeats && lastItem.position > lastTotalSeats),
+                )}</code>; стало: <code>${getStatusColor(
+                  item.isGreen,
+                  item.isRed ||
+                    (totalSeats && totalSeats - app.payload.beforeGreens < 1),
+                )}</code>)`,
+              );
+            }
+
+            if (lastItem.totalScore !== item.totalScore) {
+              isImportant = true;
+              changes.push(
+                `🌟 <b>СУММА БАЛЛОВ</b> изменена (было: <code>${lastItem.totalScore}</code>; стало: <code>${item.totalScore}</code>)`,
+              );
+            }
+
+            // if (lastItem.scoreInterview !== item.scoreInterview) {
+            //   changes.push(
+            //     `⭐️ <b>БАЛЛЫ СОБЕСА</b> изменены (было: <code>${lastItem.scoreInterview}</code>; стало: <code>${item.scoreInterview}</code>)`,
+            //   );
+            // }
+
+            if (
+              'scoreExam' in lastItem &&
+              'scoreExam' in item &&
+              lastItem.scoreExam !== item.scoreExam
+            ) {
+              isImportant = true;
+              changes.push(
+                `❇️ <b>БАЛЛЫ ЭКЗА</b> изменены (было: <code>${lastItem.scoreExam}</code>; стало: <code>${item.scoreExam}</code>)`,
+              );
+            }
+
+            if (changes.length > 0) {
+              if (bot) {
+                const chatIds = _.uniq(
+                  [
+                    xEnv.TELEGRAM_CHAT_ID,
+                    ...targetEntries.map(
+                      ([chatId, session]) =>
+                        session.isBlockedBot !== true &&
+                        session.uid === uid &&
+                        (!session.notifyType ||
+                          session.notifyType !== NotifyType.Disabled) &&
+                        (session.notifyType == NotifyType.All ||
+                          (session.notifyType === NotifyType.Important &&
+                            isImportant)) &&
+                        Number(chatId),
+                    ),
+                  ].filter(Boolean),
+                );
+
+                for (const chatId of chatIds) {
+                  bot.telegram
+                    .sendMessage(
+                      chatId,
+                      `${[
+                        `🦄 <b>(CHANGES DETECTED)</b>`,
+                        `<b>УК</b>: [<code>${uid}</code>]`,
+                        ``,
+                        `<b>• ${originalInfo.competitionGroupName}</b>`,
+                        `<b>• ${originalInfo.formTraining}</b>`,
+                        `<b>• ${originalInfo.buildDate}</b>`,
+                        `<b>• ${originalInfo.numbersInfo}</b>`,
+                        ``,
+                        `Изменения:`,
+                        ...changes,
+                      ].join('\n')}`,
+                      {
+                        parse_mode: 'HTML',
+                        ...keyboardFactory.viewFile(app.filename, uid),
+                      },
+                    )
+                    .then(() => {
+                      if (isNewEnrolled) {
+                        bot.telegram.sendMessage(chatId, `🎉`).then((e) => {
+                          bot.telegram.sendMessage(
+                            chatId,
+                            `🦄 <b>(HAPPY)</b>\n` +
+                              `УК: [<code>${uid}</code>]\n` +
+                              `🎉 Поздравляем с зачилением!`,
+                            {
+                              parse_mode: 'HTML',
+                              reply_to_message_id: e.message_id,
+                            },
+                          );
+                        });
+                      }
+                    })
+                    .catch(async (err) => {
+                      if (!(await botCatchException(err, chatId))) {
+                        console.error(err);
+                      }
+                    });
+                }
+              }
+
+              console.log(
+                new Date().toLocaleString(),
+                `(CHANGES) [${uid}] 🚨 Detected changes on "${info.competitionGroupName}"`,
+              );
+              // console.log(changes.join('\n'));
+            }
+          }
+
+          const cloneApp = _.cloneDeep(app);
+          delete cloneApp.originalInfo;
+          // update last data
+          apps.set(hashName, cloneApp);
+        }
+
+        await new Promise((resolve) => setImmediate(resolve));
+      } catch (error) {
+        console.log(`[Error] Watcher (${uid}):`);
+        console.error(error);
+      }
+    }
   }
 }
 
