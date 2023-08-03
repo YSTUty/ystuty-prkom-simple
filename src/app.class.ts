@@ -184,7 +184,7 @@ export class App {
     targetEntries: [string, ISessionState][],
   ) {
     const { data: list } = await prkomApi.get<AbiturientInfoResponse[]>(
-      testFake
+      !testFake
         ? `/v1/admission/get_many?original=true&uids=${uids.join(',')}`
         : `/v1/admission/get/fake?original=true&uids=${uids.join(',')}`,
     );
