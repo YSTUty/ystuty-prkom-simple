@@ -18,6 +18,7 @@ import * as keyboardFactory from './keyboard.factory';
 import { redisClient } from './redis.service';
 import * as utils from './utils';
 import { userCounter, tgInfoCounter } from './prometheus';
+import { adv } from './adv';
 
 // if (!xEnv.TELEGRAM_BOT_TOKEN) {
 //   throw new Error('TELEGRAM_BOT_TOKEN is not defined');
@@ -255,6 +256,100 @@ bot.command('opt', async (ctx) => {
   }
 });
 
+bot.command('msg', async (ctx) => {
+  if (!xEnv.TELEGRAM_ADMIN_IDS.includes(ctx.from.id)) {
+    return;
+  }
+
+  let [, type, advId, filterType] = ctx.message.text.split(' ').filter(Boolean);
+
+  if (
+    !('reply_to_message' in ctx.message) ||
+    !ctx.message.reply_to_message.chat
+  ) {
+    ctx.replyWithHTML('Need forward message');
+    return;
+  }
+
+  const repMessage = ctx.message.reply_to_message as tt.ReplyMessage;
+
+  let { chat, message_id } = repMessage;
+  if ('forward_from_chat' in repMessage && repMessage.forward_from_chat) {
+    chat = repMessage.forward_from_chat;
+    message_id = repMessage.forward_from_message_id;
+  }
+
+  if (type === 'adv' || type === 'advtest') {
+    advId = advId?.toLocaleLowerCase() || 'info-1';
+    if (adv.inProcess) {
+      ctx.replyWithHTML(
+        `Forwarding already runned.\n` + `Success count: ${adv.counter[advId]}`,
+      );
+      return;
+    }
+
+    const filterStr = filterType?.toLocaleLowerCase();
+    if (filterStr) {
+      let levelTrainings: LevelTrainingType[] | false = false;
+
+      const expressions = filterStr.split(';');
+      for (const expression of expressions) {
+        const [key, valuesStr] = expression.split(':');
+        if (!key || !valuesStr) {
+          ctx.replyWithHTML('filter key & values cannot be empty');
+          return;
+        }
+        const values = valuesStr.split('|');
+        switch (key) {
+          case 'l':
+          case 'level':
+            levelTrainings = [];
+
+            if (values.some((e) => ['b', 'б', 'бакалавриат'].includes(e))) {
+              levelTrainings.push(LevelTrainingType.Bachelor);
+            }
+            if (values.some((e) => ['m', 'м', 'магистратура'].includes(e))) {
+              levelTrainings.push(LevelTrainingType.Magister);
+            }
+            if (values.some((e) => ['p', 'а', 'аспирантура'].includes(e))) {
+              levelTrainings.push(LevelTrainingType.Postgraduate);
+            }
+            if (values.some((e) => ['s', 'с', 'специалитет'].includes(e))) {
+              levelTrainings.push(LevelTrainingType.Specialty);
+            }
+            break;
+        }
+      }
+      console.log({ levelTrainings });
+
+      if (levelTrainings !== false) {
+        adv.filter = (e) =>
+          levelTrainings && levelTrainings.includes(e.info.levelTraining);
+      }
+    }
+
+    if (type === 'advtest') {
+      const res = await adv.run(advId, true);
+      ctx.replyWithHTML(`Будет отправлено: ${Object.keys(res).length}`);
+    } else {
+      ctx.replyWithHTML('Forwarding starting...');
+      adv.setMessage(chat.id, message_id);
+      const res = await adv.run(advId);
+      ctx.replyWithHTML(
+        `Forwarding done! [${
+          res === null ? 'Empty ids' : res ? 'Success' : 'Fail'
+        }].\n` + `Success count: ${adv.counter[advId]}`,
+      );
+    }
+  } else {
+    ctx.replyWithHTML(
+      'Wrong type.\n' +
+        `• Example: <code>/msg advtest info-2 level:b|s</code> - количество людей отфильтрованных по магистратуре и специалитету\n` +
+        `• Example: <code>/msg adv info-2 level:b|s</code> - adv для магистратуры и специалитет\n`,
+    );
+  }
+});
+
 bot.command('dump', async (ctx) => {
   if (!xEnv.TELEGRAM_ADMIN_IDS.includes(ctx.from.id)) {
     return;
@@ -368,59 +463,59 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
         utils.taggerSmart(originalInfo.numbersInfo),
         [
           `Оригинал: <code>${
-        item.originalInUniversity || item.originalFromEGPU ? '✅' : '✖️'
-      }</code>`,
+            item.originalInUniversity || item.originalFromEGPU ? '✅' : '✖️'
+          }</code>`,
           `Приоритет: <code>${item.priority}</code>${
-        item.isHightPriority ? ' <b>(Высший)</b>' : ''
-      }`,
+            item.isHightPriority ? ' <b>(Высший)</b>' : ''
+          }`,
           `Состояние: <code>${utils.getAbiturientInfoStateString(
-        item.state,
-      )}</code> ${utils.getStatusColor(
-        item.isGreen,
-        item.isRed || (totalSeats && totalSeats - payload.beforeGreens < 1),
-      )}`,
+            item.state,
+          )}</code> ${utils.getStatusColor(
+            item.isGreen,
+            item.isRed || (totalSeats && totalSeats - payload.beforeGreens < 1),
+          )}`,
         ],
         [
-      ...(app.showPositions === 1 ||
-      (app.showPositions === 2 &&
-        totalSeats &&
-        totalSeats - payload.beforeGreens !== 0)
-        ? [
+          ...(app.showPositions === 1 ||
+          (app.showPositions === 2 &&
+            totalSeats &&
+            totalSeats - payload.beforeGreens !== 0)
+            ? [
                 `Позиция: <code>${item.position}/${totalSeats}</code>`,
                 `Позиция по оригиналам: <code>${
-              payload.beforeOriginals + 1
-            }</code>`,
-          ]
-        : []),
+                  payload.beforeOriginals + 1
+                }</code>`,
+              ]
+            : []),
           `Сумма баллов: <code>${item.totalScore || '-'}</code>`,
           [
             'scoreExam' in item && [
               `Баллы за экзамен: <code>${item.scoreExam || '-'}</code>`,
             ],
             ...('scoreSubjects' in item && item.scoreSubjects.length > 0
-        ? [
+              ? [
                   `Баллы по предметам:`,
-            ...item.scoreSubjects.map(
-              ([num, name]) =>
+                  ...item.scoreSubjects.map(
+                    ([num, name]) =>
                       `<i>${_.truncate(name, { length: 32 })}</i>: <code>${
-                  num || '-'
-                }</code>`,
-            ),
-          ]
-        : []),
+                        num || '-'
+                      }</code>`,
+                  ),
+                ]
+              : []),
           ],
         ],
         [],
       ]),
       // `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>`,
       [
-      ...(item.isGreen && payload.beforeGreens + payload.afterGreens > 0
-        ? [
+        ...(item.isGreen && payload.beforeGreens + payload.afterGreens > 0
+          ? [
               `Итоговая позиция: <code>${payload.beforeGreens + 1}</code>`,
               `До проходит: <code>${payload.beforeGreens}</code> чел.`,
               `После проходит: <code>${payload.afterGreens}</code> чел.`,
-          ]
-        : []),
+            ]
+          : []),
       ],
     ];
     await ctx.replyWithHTML(
@@ -489,8 +584,8 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
   const originalInEmoji = applications.some(
     (e) => e.item.originalInUniversity || e.item.originalFromEGPU,
   )
-      ? '✅'
-      : '✖️';
+    ? '✅'
+    : '✖️';
 
   let message: string[] = [
     `<b>УК</b>: [<code>${uid}</code>]`,
@@ -529,33 +624,33 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
         utils.taggerSmart(originalInfo.numbersInfo),
         [
           `Состояние: <code>${utils.getAbiturientInfoStateString(
-        item.state,
-      )}</code> ${coloredBallEmoji}`,
+            item.state,
+          )}</code> ${coloredBallEmoji}`,
           `Приоритет: <code>${item.priority}</code>${
             item.isHightPriority ? ' <b>(Высший)</b>' : ''
           }`,
           info.levelTraining === LevelTrainingType.Magister &&
             `Сумма баллов: <code>${item.totalScore || '-'}</code>`,
-      ...(app.showPositions === 1 ||
-      (app.showPositions === 2 &&
-        totalSeats &&
-        totalSeats - payload.beforeGreens !== 0)
-        ? [
+          ...(app.showPositions === 1 ||
+          (app.showPositions === 2 &&
+            totalSeats &&
+            totalSeats - payload.beforeGreens !== 0)
+            ? [
                 `Позиция по оригиналам: <code>${
-              payload.beforeOriginals + 1
-            }</code>`,
+                  payload.beforeOriginals + 1
+                }</code>`,
                 `Позиция: <code>${posStr}</code>`,
-          ]
-        : []),
-      ...(item.isGreen && payload.beforeGreens + payload.afterGreens > 0
-        ? [
+              ]
+            : []),
+          ...(item.isGreen && payload.beforeGreens + payload.afterGreens > 0
+            ? [
                 `Итоговая позиция: <code>${payload.beforeGreens + 1}</code>`,
                 [
                   `До проходит: <code>${payload.beforeGreens}</code> чел.`,
                   `После проходит: <code>${payload.afterGreens}</code> чел.`,
                 ],
-          ]
-        : []),
+              ]
+            : []),
         ],
       ]),
     ];
