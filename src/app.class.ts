@@ -30,7 +30,7 @@ const testFake = false;
 export class App {
   public lastData = new Map<string, Map<string, LastAbiturientInfo>>();
 
-  public showPositions: boolean;
+  public showPositions: number;
 
   public async init() {
     await this.load();
@@ -48,15 +48,38 @@ export class App {
     }
 
     startMetric();
+    const lastShowPositions = await redisClient.get(
+      'app:options:showPositions',
+    );
     this.showPositions =
-      (await redisClient.get('app:options:showPositions')) === 'true';
+      // TODO: check as bool for compability (remove then)
+      lastShowPositions === 'true'
+        ? 1
+        : lastShowPositions === 'false'
+        ? 0
+        : Number(lastShowPositions);
 
     this.runWatcherSafe().then();
   }
 
-  public async toggleShowPositions(state?: boolean) {
-    state ??= (await redisClient.get('app:options:showPositions')) === 'true';
-    this.showPositions = !state;
+  /**
+   * @param state Value `0` - not show, `1` - show all, `2` - only if in enroll top
+   */
+  public async toggleShowPositions(state?: number) {
+    if (state === undefined) {
+      const lastShowPositions = await redisClient.get(
+        'app:options:showPositions',
+      );
+      // TODO: check as bool for compability (remove then)
+      state =
+        lastShowPositions === 'true'
+          ? 1
+          : lastShowPositions === 'false'
+          ? 0
+          : Number(lastShowPositions);
+      state = (state + 1) % 3;
+    }
+    this.showPositions = state;
 
     await redisClient.set(
       'app:options:showPositions',
@@ -285,8 +308,16 @@ export class App {
               }
             }
 
+            // TODO: change position to greensPosition
+            // payload.beforeOriginals + 1
             const posDif = lastItem.position - item.position;
-            if (this.showPositions && posDif !== 0) {
+            if (
+              posDif !== 0 &&
+              (this.showPositions === 1 ||
+                (this.showPositions === 2 &&
+                  totalSeats &&
+                  totalSeats - app.payload.beforeGreens !== 0))
+            ) {
               if (posDif > 0) {
                 isImportant = true;
               }
@@ -317,6 +348,9 @@ export class App {
                   item.isRed ||
                     (totalSeats && totalSeats - app.payload.beforeGreens < 1),
                 )}</code>)`,
+                `Позиция по оригиналам: <code>${
+                  app.payload.beforeOriginals + 1
+                }</code>`,
               );
             }
 
@@ -340,7 +374,9 @@ export class App {
             ) {
               isImportant = true;
               changes.push(
-                `❇️ <b>БАЛЛЫ ЭКЗА</b> изменены (было: <code>${lastItem.scoreExam}</code>; стало: <code>${item.scoreExam}</code>)`,
+                `❇️ <b>БАЛЛЫ ЭКЗА</b> изменены (было: <code>${
+                  lastItem.scoreExam ?? '-'
+                }</code>; стало: <code>${item.scoreExam}</code>)`,
               );
             }
 
@@ -364,6 +400,7 @@ export class App {
                 );
 
                 for (const chatId of chatIds) {
+                  // TODO: add queue
                   bot.telegram
                     .sendMessage(
                       chatId,

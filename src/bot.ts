@@ -1,9 +1,4 @@
-import {
-  Telegraf,
-  Composer,
-  TelegramError,
-  Context as TelegrafContext,
-} from 'telegraf';
+import { Telegraf, Composer, TelegramError } from 'telegraf';
 import { TelegrafSessionRedis } from '@ivaniuk/telegraf-session-redis';
 import { ExtraReplyMessage } from 'telegraf/typings/telegram-types';
 import * as tt from 'telegraf/typings/core/types/typegram';
@@ -17,6 +12,7 @@ import {
   AbiturientInfoResponse,
   NotifyType,
   INarrowedContext,
+  LevelTrainingType,
 } from './interfaces';
 import * as keyboardFactory from './keyboard.factory';
 import { redisClient } from './redis.service';
@@ -80,11 +76,12 @@ bot.launch().then(() => {
 });
 
 bot.telegram.setMyCommands([
-  { command: 'start', description: 'Show menu' },
-  { command: 'info', description: 'Show my info' },
-  { command: 'minfo', description: 'Show short info' },
-  { command: 'watch', description: 'Set watcher' },
-  { command: 'stop', description: 'Stop watcher' },
+  { command: 'start', description: 'Показать меню' },
+  { command: 'help', description: 'Показать описание' },
+  { command: 'info', description: 'Показать информацию о заявлениях' },
+  { command: 'minfo', description: 'Показать информацию о заявлениях сжато' },
+  { command: 'watch', description: 'Установить наблюдение за...' },
+  { command: 'stop', description: 'Приостановить наблюдение' },
 ]);
 
 bot.use(redisSession.middleware());
@@ -182,6 +179,10 @@ bot.start(async (ctx: ITextMessageContext & { startPayload: string }) => {
     },
   );
 
+  if (ctx.state.isFirst) {
+    await onHelp(ctx);
+  }
+
   if (newUid) {
     if (ctx.session.uid !== newUid || !ctx.session.loadCount) {
       ctx.session.loadCount = 0;
@@ -195,6 +196,31 @@ bot.start(async (ctx: ITextMessageContext & { startPayload: string }) => {
     );
   }
 });
+
+const onHelp = async (ctx: ITextMessageContext) => {
+  ctx.replyWithHTML(
+    [
+      `• <b>УК — Уникальный код</b> — СНИЛС абитуриента`,
+      ``,
+      `• <b><i>"Светофор"</i></b> состояния / статус:`,
+      `  • 🔴 — Недостаточно баллов (баллы еще не были проставлены или не были указаны при подаче заявления) / Не проходит в списках для поступления`,
+      `  • 🟡 — Есть шанс (баллов для зачисления достаточно) / Ожидание решения приемной комиссии`,
+      `  • 🟢 — Абитуриент точно проходит на специальность / Уже зачислен`,
+      ``,
+      `• <b>Позиция по оригиналам</b> — сколько абитуриентов подало оригинал в ВУЗ перед вами.`,
+      ``,
+    ].join('\n'),
+    keyboardFactory.main(ctx as IContext),
+  );
+  ctx.replyWithHTML(
+    [
+      `<b>ℹ️ Информация:</b> <i>позиция в списке поступающих не всегда определяет возможность зачисления на выбранную специальность.</i>`,
+      ``,
+      `  Если вы оказываетесь ниже других абитуриентов в списке, которые уже получили предложение о зачислении на другую специальность, вас все равно рассматривают для зачисления на данную специальность, потому что в этом случае, эти абитуриенты уже не рассматриваются к зачислению на данную специальносить и ваше заявление автоматически перемещается выше по списку и становится ближе к зачислению.`,
+    ].join('\n'),
+  );
+};
+bot.help(onHelp);
 
 bot.command('app', (ctx) => {
   if (!xEnv.TELEGRAM_ADMIN_IDS.includes(ctx.from.id)) {
@@ -216,9 +242,11 @@ bot.command('opt', async (ctx) => {
     case 'pos':
     case 'showpositions':
       const newState = await app.toggleShowPositions(
-        state === 'true' ? true : state === 'false' ? false : undefined,
+        state === '0' ? 0 : state === '1' ? 1 : state === '2' ? 2 : undefined,
       );
-      ctx.reply(`showPositions = ${newState}`);
+      ctx.reply(
+        `showPositions = [${newState}]\nValue '0' - not show, '1' - show all, '2' - only if in enroll top`,
+      );
       break;
 
     default:
@@ -314,61 +342,77 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
 
   const applications = res.data;
   applications.sort((a, b) => a.item.priority - b.item.priority);
+  applications.sort((a, b) =>
+    b.item.isGreen || a.item.isRed
+      ? 1
+      : a.item.isGreen ||
+        b.item.isRed ||
+        (b.info.numbersInfo.total &&
+          b.info.numbersInfo.total - b.payload.beforeGreens < 1)
+      ? -1
+      : 0,
+  );
 
   for (const application of applications) {
     const { info, originalInfo, item, payload } = application;
     const totalSeats = info.numbersInfo.total ?? 0;
     const message = [
-      `<b>УК</b>: [<code>${item.uid}</code>]`,
+      /* 
+      📃─
+      ├─ 
+      └─ 
+      */
+      `📃─<b>УК</b>: [<code>${item.uid}</code>]`,
       ``,
-      `• ${utils.taggerSmart(originalInfo.buildDate)}`,
-      `• ${utils.taggerSep(originalInfo.competitionGroupName)}`,
-      `• ${utils.taggerSmart(originalInfo.formTraining)}`,
-      `• ${utils.taggerSmart(originalInfo.levelTraining)}`,
-      `• ${utils.taggerSmart(originalInfo.basisAdmission)}`,
-      `• ${utils.taggerSmart(originalInfo.numbersInfo)}`,
-      ``,
-      `• Приоритет: <code>${item.priority}</code>${
+      `├─ ${utils.taggerSmart(originalInfo.buildDate)}`,
+      `├─ ${utils.taggerSep(originalInfo.competitionGroupName)}`,
+      `├─ ${utils.taggerSmart(originalInfo.formTraining)}`,
+      `├─ ${utils.taggerSmart(originalInfo.levelTraining)}`,
+      `├─ ${utils.taggerSmart(originalInfo.basisAdmission)}`,
+      `└─ ${utils.taggerSmart(originalInfo.numbersInfo)}`,
+      `   ├─ Оригинал: <code>${
+        item.originalInUniversity || item.originalFromEGPU ? '✅' : '✖️'
+      }</code>`,
+      `   ├─ Приоритет: <code>${item.priority}</code>${
         item.isHightPriority ? ' <b>(Высший)</b>' : ''
       }`,
-      `• Состояние: <code>${utils.getAbiturientInfoStateString(
+      `   └─ Состояние: <code>${utils.getAbiturientInfoStateString(
         item.state,
       )}</code> ${utils.getStatusColor(
         item.isGreen,
         item.isRed || (totalSeats && totalSeats - payload.beforeGreens < 1),
       )}`,
-      ...(!app.showPositions
-        ? []
-        : [
-            `• Позиция: <code>${item.position}/${totalSeats}</code>`,
-            `• Позиция по оригиналам: <code>${
+      ...(app.showPositions === 1 ||
+      (app.showPositions === 2 &&
+        totalSeats &&
+        totalSeats - payload.beforeGreens !== 0)
+        ? [
+            `   ├─ Позиция: <code>${item.position}/${totalSeats}</code>`,
+            `   ├─ Позиция по оригиналам: <code>${
               payload.beforeOriginals + 1
             }</code>`,
-          ]),
-      `• Сумма баллов: <code>${item.totalScore || 'нету'}</code>`,
+          ]
+        : []),
+      `   ├─ Сумма баллов: <code>${item.totalScore || '-'}</code>`,
       ...('scoreExam' in item
-        ? [`• Баллы за экзамен: <code>${item.scoreExam || 'нету'}</code>`]
+        ? [`      └─ Баллы за экзамен: <code>${item.scoreExam || '-'}</code>`]
         : 'scoreSubjects' in item && item.scoreSubjects.length > 0
         ? [
-            `• Баллы по предметам:`,
+            `   └─ Баллы по предметам:`,
             ...item.scoreSubjects.map(
               ([num, name]) =>
                 `  ∟ <i>${_.truncate(name, { length: 32 })}</i>: <code>${
-                  num || 'нету'
+                  num || '-'
                 }</code>`,
             ),
           ]
         : []),
       // `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>`,
-      `• Оригинал: <code>${
-        item.originalInUniversity || item.originalFromEGPU ? '✅' : '✖️'
-      }</code>`,
-      ``,
-      ...(payload.beforeGreens + payload.afterGreens > 0
+      ...(item.isGreen && payload.beforeGreens + payload.afterGreens > 0
         ? [
-            `• Итоговая позиция: <code>${payload.beforeGreens + 1}</code>`,
-            `• До проходит: <code>${payload.beforeGreens}</code> чел.`,
-            `• После проходит: <code>${payload.afterGreens}</code> чел.`,
+            `   ├─ Итоговая позиция: <code>${payload.beforeGreens + 1}</code>`,
+            `   ├─ До проходит: <code>${payload.beforeGreens}</code> чел.`,
+            `   └─ После проходит: <code>${payload.afterGreens}</code> чел.`,
           ]
         : []),
     ];
@@ -424,6 +468,16 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
   const firstApp = applications.at(0);
 
   applications.sort((a, b) => a.item.priority - b.item.priority);
+  applications.sort((a, b) =>
+    b.item.isGreen || a.item.isRed
+      ? 1
+      : a.item.isGreen ||
+        b.item.isRed ||
+        (b.info.numbersInfo.total &&
+          b.info.numbersInfo.total - b.payload.beforeGreens < 1)
+      ? -1
+      : 0,
+  );
 
   const originalInEmoji =
     firstApp.item.originalInUniversity || firstApp.item.originalFromEGPU
@@ -434,8 +488,10 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
     `<b>УК</b>: [<code>${uid}</code>]`,
     ``,
     `📄 ${utils.taggerSmart(firstApp.originalInfo.buildDate)}`,
-    `  ├── Сумма баллов: <code>${firstApp.item.totalScore || 'нету'}</code>`,
-    `  └── Оригинал: <code>${originalInEmoji}</code>`,
+    ...(firstApp.info.levelTraining !== LevelTrainingType.Magister
+      ? [`  ├─ Сумма баллов: <code>${firstApp.item.totalScore || '-'}</code>`]
+      : []),
+    `  └─ Оригинал: <code>${originalInEmoji}</code>`,
   ];
 
   for (const application of res.data) {
@@ -457,31 +513,37 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       ``,
       `  ✦  • · ·· <a href="${viewLink}">[Посмотреть на сайте]</a>  ·· · •  ✦`,
       `📃─ ${utils.taggerSep(originalInfo.competitionGroupName)}`,
-      `├── ${utils.taggerSmart(originalInfo.formTraining)}`,
-      `├── ${utils.taggerSmart(originalInfo.levelTraining)}`,
-      `├── ${utils.taggerSmart(originalInfo.basisAdmission)}`,
-      `└── ${utils.taggerSmart(originalInfo.numbersInfo)}`,
-      `      ├── Состояние: <code>${utils.getAbiturientInfoStateString(
+      `├─ ${utils.taggerSmart(originalInfo.formTraining)}`,
+      `├─ ${utils.taggerSmart(originalInfo.levelTraining)}`,
+      `├─ ${utils.taggerSmart(originalInfo.basisAdmission)}`,
+      `└─ ${utils.taggerSmart(originalInfo.numbersInfo)}`,
+      `      ├─ Состояние: <code>${utils.getAbiturientInfoStateString(
         item.state,
       )}</code> ${coloredBallEmoji}`,
-      `      ${app.showPositions ? '├' : '└'}── Приоритет: <code>${
+      `      ${app.showPositions ? '├' : '└'}─ Приоритет: <code>${
         item.priority
       }</code>${item.isHightPriority ? ' <b>(Высший)</b>' : ''}`,
-      ...(!app.showPositions
-        ? []
-        : [
-            `      ├── Позиция по оригиналам: <code>${
+      ...(info.levelTraining === LevelTrainingType.Magister
+        ? [`      ├─ Сумма баллов: <code>${item.totalScore || '-'}</code>`]
+        : []),
+      ...(app.showPositions === 1 ||
+      (app.showPositions === 2 &&
+        totalSeats &&
+        totalSeats - payload.beforeGreens !== 0)
+        ? [
+            `      ├─ Позиция по оригиналам: <code>${
               payload.beforeOriginals + 1
             }</code>`,
-            `      └── Позиция: <code>${posStr}</code>`,
-          ]),
-      ...(payload.beforeGreens + payload.afterGreens > 0
+            `      └─ Позиция: <code>${posStr}</code>`,
+          ]
+        : []),
+      ...(item.isGreen && payload.beforeGreens + payload.afterGreens > 0
         ? [
-            `         └── Итоговая позиция: <code>${
+            `          └─ Итоговая позиция: <code>${
               payload.beforeGreens + 1
             }</code>`,
-            `            ├── До проходит: <code>${payload.beforeGreens}</code> чел.`,
-            `            └── После проходит: <code>${payload.afterGreens}</code> чел.`,
+            `            ├─ До проходит: <code>${payload.beforeGreens}</code> чел.`,
+            `            └─ После проходит: <code>${payload.afterGreens}</code> чел.`,
           ]
         : []),
     ];
@@ -497,7 +559,10 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
     message.push(...content);
   }
 
-  await ctx.replyWithHTML(message.join('\n'));
+  await ctx.replyWithHTML(
+    message.join('\n'),
+    keyboardFactory.main(ctx as IContext),
+  );
 });
 bot.command('minfo', onShortInfo);
 bot.hears(
