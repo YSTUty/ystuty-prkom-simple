@@ -357,64 +357,71 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
     const { info, originalInfo, item, payload } = application;
     const totalSeats = info.numbersInfo.total ?? 0;
     const message = [
-      /* 
-      📃─
-      ├─ 
-      └─ 
-      */
       `📃─<b>УК</b>: [<code>${item.uid}</code>]`,
       ``,
-      `├─ ${utils.taggerSmart(originalInfo.buildDate)}`,
-      `├─ ${utils.taggerSep(originalInfo.competitionGroupName)}`,
-      `├─ ${utils.taggerSmart(originalInfo.formTraining)}`,
-      `├─ ${utils.taggerSmart(originalInfo.levelTraining)}`,
-      `├─ ${utils.taggerSmart(originalInfo.basisAdmission)}`,
-      `└─ ${utils.taggerSmart(originalInfo.numbersInfo)}`,
-      `   ├─ Оригинал: <code>${
+      ...utils.treeStrBuilder([
+        utils.taggerSmart(originalInfo.buildDate),
+        utils.taggerSep(originalInfo.competitionGroupName),
+        utils.taggerSmart(originalInfo.formTraining),
+        utils.taggerSmart(originalInfo.levelTraining),
+        utils.taggerSmart(originalInfo.basisAdmission),
+        utils.taggerSmart(originalInfo.numbersInfo),
+        [
+          `Оригинал: <code>${
         item.originalInUniversity || item.originalFromEGPU ? '✅' : '✖️'
       }</code>`,
-      `   ├─ Приоритет: <code>${item.priority}</code>${
+          `Приоритет: <code>${item.priority}</code>${
         item.isHightPriority ? ' <b>(Высший)</b>' : ''
       }`,
-      `   └─ Состояние: <code>${utils.getAbiturientInfoStateString(
+          `Состояние: <code>${utils.getAbiturientInfoStateString(
         item.state,
       )}</code> ${utils.getStatusColor(
         item.isGreen,
         item.isRed || (totalSeats && totalSeats - payload.beforeGreens < 1),
       )}`,
+        ],
+        [
       ...(app.showPositions === 1 ||
       (app.showPositions === 2 &&
         totalSeats &&
         totalSeats - payload.beforeGreens !== 0)
         ? [
-            `   ├─ Позиция: <code>${item.position}/${totalSeats}</code>`,
-            `   ├─ Позиция по оригиналам: <code>${
+                `Позиция: <code>${item.position}/${totalSeats}</code>`,
+                `Позиция по оригиналам: <code>${
               payload.beforeOriginals + 1
             }</code>`,
           ]
         : []),
-      `   ├─ Сумма баллов: <code>${item.totalScore || '-'}</code>`,
-      ...('scoreExam' in item
-        ? [`      └─ Баллы за экзамен: <code>${item.scoreExam || '-'}</code>`]
-        : 'scoreSubjects' in item && item.scoreSubjects.length > 0
+          `Сумма баллов: <code>${item.totalScore || '-'}</code>`,
+          [
+            'scoreExam' in item && [
+              `Баллы за экзамен: <code>${item.scoreExam || '-'}</code>`,
+            ],
+            ...('scoreSubjects' in item && item.scoreSubjects.length > 0
         ? [
-            `   └─ Баллы по предметам:`,
+                  `Баллы по предметам:`,
             ...item.scoreSubjects.map(
               ([num, name]) =>
-                `  ∟ <i>${_.truncate(name, { length: 32 })}</i>: <code>${
+                      `<i>${_.truncate(name, { length: 32 })}</i>: <code>${
                   num || '-'
                 }</code>`,
             ),
           ]
         : []),
+          ],
+        ],
+        [],
+      ]),
       // `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>`,
+      [
       ...(item.isGreen && payload.beforeGreens + payload.afterGreens > 0
         ? [
-            `   ├─ Итоговая позиция: <code>${payload.beforeGreens + 1}</code>`,
-            `   ├─ До проходит: <code>${payload.beforeGreens}</code> чел.`,
-            `   └─ После проходит: <code>${payload.afterGreens}</code> чел.`,
+              `Итоговая позиция: <code>${payload.beforeGreens + 1}</code>`,
+              `До проходит: <code>${payload.beforeGreens}</code> чел.`,
+              `После проходит: <code>${payload.afterGreens}</code> чел.`,
           ]
         : []),
+      ],
     ];
     await ctx.replyWithHTML(
       message.join('\n'),
@@ -479,8 +486,9 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       : 0,
   );
 
-  const originalInEmoji =
-    firstApp.item.originalInUniversity || firstApp.item.originalFromEGPU
+  const originalInEmoji = applications.some(
+    (e) => e.item.originalInUniversity || e.item.originalFromEGPU,
+  )
       ? '✅'
       : '✖️';
 
@@ -488,10 +496,12 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
     `<b>УК</b>: [<code>${uid}</code>]`,
     ``,
     `📄 ${utils.taggerSmart(firstApp.originalInfo.buildDate)}`,
-    ...(firstApp.info.levelTraining !== LevelTrainingType.Magister
-      ? [`  ├─ Сумма баллов: <code>${firstApp.item.totalScore || '-'}</code>`]
-      : []),
-    `  └─ Оригинал: <code>${originalInEmoji}</code>`,
+    ...utils.treeStrBuilder([
+      utils.taggerSmart(firstApp.originalInfo.levelTraining),
+      firstApp.info.levelTraining !== LevelTrainingType.Magister &&
+        `Сумма баллов: <code>${firstApp.item.totalScore || '-'}</code>`,
+      `Оригинал: <code>${originalInEmoji}</code>`,
+    ]),
   ];
 
   for (const application of res.data) {
@@ -513,39 +523,41 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       ``,
       `  ✦  • · ·· <a href="${viewLink}">[Посмотреть на сайте]</a>  ·· · •  ✦`,
       `📃─ ${utils.taggerSep(originalInfo.competitionGroupName)}`,
-      `├─ ${utils.taggerSmart(originalInfo.formTraining)}`,
-      `├─ ${utils.taggerSmart(originalInfo.levelTraining)}`,
-      `├─ ${utils.taggerSmart(originalInfo.basisAdmission)}`,
-      `└─ ${utils.taggerSmart(originalInfo.numbersInfo)}`,
-      `      ├─ Состояние: <code>${utils.getAbiturientInfoStateString(
+      ...utils.treeStrBuilder([
+        utils.taggerSmart(originalInfo.formTraining),
+        utils.taggerSmart(originalInfo.basisAdmission),
+        utils.taggerSmart(originalInfo.numbersInfo),
+        [
+          `Состояние: <code>${utils.getAbiturientInfoStateString(
         item.state,
       )}</code> ${coloredBallEmoji}`,
-      `      ${app.showPositions ? '├' : '└'}─ Приоритет: <code>${
-        item.priority
-      }</code>${item.isHightPriority ? ' <b>(Высший)</b>' : ''}`,
-      ...(info.levelTraining === LevelTrainingType.Magister
-        ? [`      ├─ Сумма баллов: <code>${item.totalScore || '-'}</code>`]
-        : []),
+          `Приоритет: <code>${item.priority}</code>${
+            item.isHightPriority ? ' <b>(Высший)</b>' : ''
+          }`,
+          info.levelTraining === LevelTrainingType.Magister &&
+            `Сумма баллов: <code>${item.totalScore || '-'}</code>`,
       ...(app.showPositions === 1 ||
       (app.showPositions === 2 &&
         totalSeats &&
         totalSeats - payload.beforeGreens !== 0)
         ? [
-            `      ├─ Позиция по оригиналам: <code>${
+                `Позиция по оригиналам: <code>${
               payload.beforeOriginals + 1
             }</code>`,
-            `      └─ Позиция: <code>${posStr}</code>`,
+                `Позиция: <code>${posStr}</code>`,
           ]
         : []),
       ...(item.isGreen && payload.beforeGreens + payload.afterGreens > 0
         ? [
-            `          └─ Итоговая позиция: <code>${
-              payload.beforeGreens + 1
-            }</code>`,
-            `            ├─ До проходит: <code>${payload.beforeGreens}</code> чел.`,
-            `            └─ После проходит: <code>${payload.afterGreens}</code> чел.`,
+                `Итоговая позиция: <code>${payload.beforeGreens + 1}</code>`,
+                [
+                  `До проходит: <code>${payload.beforeGreens}</code> чел.`,
+                  `После проходит: <code>${payload.afterGreens}</code> чел.`,
+                ],
           ]
         : []),
+        ],
+      ]),
     ];
 
     if ([...message, ...content].join('\n').length > 4096) {

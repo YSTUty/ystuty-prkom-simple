@@ -41,6 +41,49 @@ export const getAbiturientInfoStateString = (val: AbiturientInfoStateType) => {
   }[val];
 };
 
+type DeepString = string | false | DeepString[];
+export const treeStrBuilder = (
+  deepTree: DeepString[],
+  tabString = ' '.repeat(2),
+  opt: { first: string; middle: string; last: string } = {
+    first: '├─ ',
+    middle: '├─ ',
+    last: '└─ ',
+  },
+) => {
+  let strArr: string[] = [];
+  const unzip = (tree: DeepString[], deep = 0) => {
+    for (let i = 0; i < tree.length; ++i) {
+      const strOrArr = tree[i];
+      const isLast = i === tree.length - 1 || Array.isArray(tree[i + 1]);
+      if (Array.isArray(strOrArr)) {
+        unzip(strOrArr, deep + 1);
+        continue;
+      }
+      if (strOrArr === false) {
+        continue;
+      }
+
+      const prefix = opt[isLast ? 'last' : i === 0 ? 'first' : 'middle'];
+      strArr.push(`${tabString.repeat(deep)}${prefix}${strOrArr}`);
+    }
+  };
+
+  unzip(deepTree);
+
+  return strArr;
+};
+
+console.log(
+  treeStrBuilder([
+    'A',
+    ['B'],
+    ['B', 'B'],
+    [['C', 'C'], 'B'],
+    ['B', [['D']]],
+  ]).join('\n'),
+);
+
 export class RateLimiter {
   private limiters: Record<number, Limiter> = {};
 
