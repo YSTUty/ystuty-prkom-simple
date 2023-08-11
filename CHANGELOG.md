@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.7](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.3.6...v1.3.7) (2023-08-11)
+
+
+### 🐛 Bug Fixes
+
+* **app:** typos on test check ([73744ef](https://github.com/ystuty/ystuty-prkom-simple/commit/73744efb1678a383e9ca73f67ee6ab63a437fc55))
+
+
+### 🧹 Chore
+
+* **bot:** add string tree builder util ([219aec1](https://github.com/ystuty/ystuty-prkom-simple/commit/219aec1cf2c1157b7985ee7dc036cc533d15560f))
+* **bot:** update formatting & display info ([bf1f43c](https://github.com/ystuty/ystuty-prkom-simple/commit/bf1f43c7d2e8968abd00cf1cce3fc79b763fa044))
+
+
+### 🚀 Features
+
+* **bot:** add mass mailing (adv) ([34f6aeb](https://github.com/ystuty/ystuty-prkom-simple/commit/34f6aeb1bb163d1e2d686978ce00a12332e8dbd3))
+
 ### [1.3.6](https://github.com/ystuty/ystuty-prkom-simple/compare/v1.3.5...v1.3.6) (2023-08-02)
 
 
