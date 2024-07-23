@@ -451,15 +451,12 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       : 0,
   );
 
-  const hasContractNumber = applications.some(
-    (e) => 'contractNumber' in e.item,
-  );
-
-  const hasOriginalData = applications.some(
-    (e) => 'originalInUniversity' in e.item || 'originalFromEGPU' in e.item,
-  );
-
   for (const application of applications) {
+    const hasContractNumber = 'contractNumber' in application.item;
+    const hasOriginalData =
+      'originalInUniversity' in application.item ||
+      'originalFromEGPU' in application.item;
+
     const { info, originalInfo, item, payload } = application;
     const totalSeats = info.numbersInfo.total ?? 0;
     const message = [
@@ -586,10 +583,6 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
   const applications = res.data;
   const firstApp = applications.at(0);
 
-  const hasContractNumber = applications.some(
-    (e) => 'contractNumber' in e.item,
-  );
-
   const hasOriginalData = applications.some(
     (e) => 'originalInUniversity' in e.item || 'originalFromEGPU' in e.item,
   );
@@ -622,16 +615,14 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       utils.taggerSmart(firstApp.originalInfo.levelTraining),
       firstApp.info.levelTraining !== LevelTrainingType.Magister &&
         `Сумма баллов: <code>${firstApp.item.totalScore || '-'}</code>`,
-      ...(hasOriginalData
-        ? [`Оригинал: <code>${originalInEmoji}</code>`]
-        : hasContractNumber
-        ? [`Договор: <code>${firstApp.item.contractNumber || '➖'}</code>`]
-        : []),
+      ...(hasOriginalData ? [`Оригинал: <code>${originalInEmoji}</code>`] : []),
     ]),
   ];
 
   for (const application of res.data) {
     const { info, originalInfo, item, payload } = application;
+
+    const hasContractNumber = 'contractNumber' in item;
 
     // const textHash = encodeURIComponent(uid.split('-').pop());
     // const viewLink = `${xEnv.YSTU_PRKOM_URL}/${app.filename}#:~:text=${textHash}`;
@@ -657,6 +648,9 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
           `Состояние: <code>${utils.getAbiturientInfoStateString(
             item.state,
           )}</code> ${coloredBallEmoji}`,
+          ...(hasContractNumber
+            ? [`Договор: <code>${item.contractNumber || '➖'}</code>`]
+            : []),
           `Приоритет: <code>${item.priority}</code>${
             item.isHightPriority ? ' <b>(Высший)</b>' : ''
           }`,
