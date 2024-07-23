@@ -166,6 +166,9 @@ bot.start(async (ctx: ITextMessageContext & { startPayload: string }) => {
             `• Используй /info, чтобы узнать текущее состояние.`,
           ]
         : []),
+      ...(!ctx.state.isFirst
+        ? [``, `• Используй /help, чтобы получить описание работы с ботом.`]
+        : []),
       ``,
       `Информация об обновлениях бота от YSTUty <a href="https://t.me/ystuty_log">в Telegram канале</a> и <a href="https://vk.com/ystuty">в группе VK</a>`,
       ``,
