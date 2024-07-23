@@ -27,6 +27,9 @@ export function MAP_reviver(key, value) {
 export const getStatusColor = (isGreen: boolean, isBad = true) =>
   isGreen || !isBad ? (isGreen ? '🟢' : '🟡') : '🔴';
 
+export const boolEmoji = (val: boolean) =>
+  val ? '✅' : val === false ? '✖️' : '➖';
+
 export const taggerSmart = (str: string, tag = 'b') =>
   str.replace(/([^-:.]+)( - |: )([^-:\.]+[^ ]+)/gi, `$1$2<${tag}>$3</${tag}>`);
 

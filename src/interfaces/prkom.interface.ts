@@ -186,15 +186,17 @@ export type AbiturientInfo_Base = {
   /** Преимущ. право */
   preemptiveRight: boolean;
   /** Оригинал в ВУЗе */
-  originalInUniversity: boolean;
+  originalInUniversity?: boolean | undefined;
   /** Оригинал из ЕПГУ */
-  originalFromEGPU: boolean;
+  originalFromEGPU?: boolean | undefined;
   /** Состояние */
   state: AbiturientInfoStateType | null;
   /** Приоритет */
   priority: number;
   /** Это высший приоритет */
   isHightPriority: boolean;
+  /** Договор. Номер договора (из заявления) */
+  contractNumber?: string | undefined;
 };
 
 /** Информация заявления (на бакалавриат и специалитет) */

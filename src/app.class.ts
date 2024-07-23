@@ -13,7 +13,12 @@ import {
 import { cacheManager } from './cache-manager.util';
 import * as keyboardFactory from './keyboard.factory';
 import { redisClient } from './redis.service';
-import { getAbiturientInfoStateString, getStatusColor, md5 } from './utils';
+import {
+  boolEmoji,
+  getAbiturientInfoStateString,
+  getStatusColor,
+  md5,
+} from './utils';
 import { userCounter, startMetric } from './prometheus';
 
 export const prkomApi = axios.create({
@@ -351,6 +356,26 @@ export class App {
                 `Позиция по оригиналам: <code>${
                   app.payload.beforeOriginals + 1
                 }</code>`,
+              );
+            }
+
+            if (
+              'originalInUniversity' in lastItem &&
+              ((lastItem.originalInUniversity !== null &&
+                lastItem.originalInUniversity !== item.originalInUniversity) ||
+                (lastItem.originalFromEGPU !== null &&
+                  lastItem.originalFromEGPU !== item.originalFromEGPU))
+            ) {
+              // isImportant = true;
+              changes.push(
+                `📄 <b>Оригинал</b> изменен (было: <code>${boolEmoji(
+                  lastItem.originalInUniversity || lastItem.originalFromEGPU,
+                )}</code>; стало: <code>${boolEmoji(
+                  item.originalInUniversity || item.originalFromEGPU,
+                )}</code>)`,
+                `Оригинал в ВУЗе: <code>${boolEmoji(
+                  item.originalInUniversity,
+                )}</code>`,
               );
             }
 

@@ -448,6 +448,14 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       : 0,
   );
 
+  const hasContractNumber = applications.some(
+    (e) => 'contractNumber' in e.item,
+  );
+
+  const hasOriginalData = applications.some(
+    (e) => 'originalInUniversity' in e.item || 'originalFromEGPU' in e.item,
+  );
+
   for (const application of applications) {
     const { info, originalInfo, item, payload } = application;
     const totalSeats = info.numbersInfo.total ?? 0;
@@ -462,9 +470,15 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
         utils.taggerSmart(originalInfo.basisAdmission),
         utils.taggerSmart(originalInfo.numbersInfo),
         [
-          `Оригинал: <code>${
-            item.originalInUniversity || item.originalFromEGPU ? '✅' : '✖️'
-          }</code>`,
+          ...(hasOriginalData
+            ? [
+                `Оригинал: <code>${utils.boolEmoji(
+                  item.originalInUniversity || item.originalFromEGPU,
+                )}</code>`,
+              ]
+            : hasContractNumber
+            ? [`Договор: <code>${item.contractNumber || '➖'}</code>`]
+            : []),
           `Приоритет: <code>${item.priority}</code>${
             item.isHightPriority ? ' <b>(Высший)</b>' : ''
           }`,
@@ -569,6 +583,22 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
   const applications = res.data;
   const firstApp = applications.at(0);
 
+  const hasContractNumber = applications.some(
+    (e) => 'contractNumber' in e.item,
+  );
+
+  const hasOriginalData = applications.some(
+    (e) => 'originalInUniversity' in e.item || 'originalFromEGPU' in e.item,
+  );
+
+  const originalInEmoji =
+    hasOriginalData &&
+    utils.boolEmoji(
+      applications.some(
+        (e) => e.item.originalInUniversity || e.item.originalFromEGPU,
+      ),
+    );
+
   applications.sort((a, b) => a.item.priority - b.item.priority);
   applications.sort((a, b) =>
     b.item.isGreen || a.item.isRed
@@ -581,12 +611,6 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       : 0,
   );
 
-  const originalInEmoji = applications.some(
-    (e) => e.item.originalInUniversity || e.item.originalFromEGPU,
-  )
-    ? '✅'
-    : '✖️';
-
   let message: string[] = [
     `<b>УК</b>: [<code>${uid}</code>]`,
     ``,
@@ -595,7 +619,11 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       utils.taggerSmart(firstApp.originalInfo.levelTraining),
       firstApp.info.levelTraining !== LevelTrainingType.Magister &&
         `Сумма баллов: <code>${firstApp.item.totalScore || '-'}</code>`,
-      `Оригинал: <code>${originalInEmoji}</code>`,
+      ...(hasOriginalData
+        ? [`Оригинал: <code>${originalInEmoji}</code>`]
+        : hasContractNumber
+        ? [`Договор: <code>${firstApp.item.contractNumber || '➖'}</code>`]
+        : []),
     ]),
   ];
 
