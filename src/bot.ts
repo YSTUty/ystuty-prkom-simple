@@ -660,8 +660,9 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
           `Приоритет: <code>${item.priority}</code>${
             item.isHightPriority ? ' <b>(Высший)</b>' : ''
           }`,
-          info.levelTraining === LevelTrainingType.Magister &&
-            `Сумма баллов: <code>${item.totalScore || '-'}</code>`,
+          ...(info.levelTraining === LevelTrainingType.Magister
+            ? [`Сумма баллов: <code>${item.totalScore || '-'}</code>`]
+            : []),
           ...(app.showPositions === 1 ||
           (app.showPositions === 2 &&
             totalSeats &&

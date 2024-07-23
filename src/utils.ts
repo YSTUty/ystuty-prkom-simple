@@ -56,6 +56,8 @@ export const treeStrBuilder = (
 ) => {
   let strArr: string[] = [];
   const unzip = (tree: DeepString[], deep = 0) => {
+    tree = tree.filter((e) => e !== false);
+
     for (let i = 0; i < tree.length; ++i) {
       const strOrArr = tree[i];
       const isLast = i === tree.length - 1 || Array.isArray(tree[i + 1]);
