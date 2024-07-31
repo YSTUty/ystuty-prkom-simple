@@ -375,11 +375,7 @@ export class App {
             }
 
             const greenPosDif = lastPayload.beforeGreens - payload.beforeGreens;
-            if (
-              !isNewEnrolled &&
-              lastItem.isGreen !== null &&
-              greenPosDif !== 0
-            ) {
+            if (!isNewEnrolled && item.isGreen !== null && greenPosDif !== 0) {
               isImportant = true;
               changes.push(
                 `🏆 <b>Итоговая ПОЗИЦИЯ</b> изменена ${
