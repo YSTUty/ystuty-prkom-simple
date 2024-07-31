@@ -495,10 +495,14 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
             totalSeats &&
             totalSeats - payload.beforeGreens !== 0)
             ? [
-                `Позиция: <code>${item.position}/${totalSeats}</code>`,
-                `Позиция по оригиналам: <code>${
-                  payload.beforeOriginals + 1
-                }</code>`,
+                `Общая Позиция: <code>${item.position}/${totalSeats}</code>`,
+                ...(hasContractNumber
+                  ? []
+                  : [
+                      `Позиция по оригиналам: <code>${
+                        payload.beforeOriginals + 1
+                      }</code>`,
+                    ]),
               ]
             : []),
           `Сумма баллов: <code>${item.totalScore || '-'}</code>`,
@@ -523,9 +527,14 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
       ]),
       // `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>`,
       [
-        ...(item.isGreen && payload.beforeGreens + payload.afterGreens > 0
+        ...((payload.beforeGreens + 1 < totalSeats || item.isGreen) &&
+        payload.beforeGreens + payload.afterGreens > 0
           ? [
-              `Итоговая позиция: <code>${payload.beforeGreens + 1}</code>`,
+              `${
+                item.isGreen || hasContractNumber
+                  ? '🏆 Итоговая позиция'
+                  : '🪄 <b>Позиция, если подать оригинал</b>'
+              }: <code>${payload.beforeGreens + 1}</code>`,
               `До проходит: <code>${payload.beforeGreens}</code> чел.`,
               `После проходит: <code>${payload.afterGreens}</code> чел.`,
             ]
@@ -662,15 +671,24 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
             totalSeats &&
             totalSeats - payload.beforeGreens !== 0)
             ? [
-                `Позиция по оригиналам: <code>${
-                  payload.beforeOriginals + 1
-                }</code>`,
-                `Позиция: <code>${posStr}</code>`,
+                ...(hasContractNumber
+                  ? []
+                  : [
+                      `Позиция по оригиналам: <code>${
+                        payload.beforeOriginals + 1
+                      }</code>`,
+                    ]),
+                `Общая Позиция: <code>${posStr}</code>`,
               ]
             : []),
-          ...(item.isGreen && payload.beforeGreens + payload.afterGreens > 0
+          ...((payload.beforeGreens + 1 < totalSeats || item.isGreen) &&
+          payload.beforeGreens + payload.afterGreens > 0
             ? [
-                `Итоговая позиция: <code>${payload.beforeGreens + 1}</code>`,
+                `${
+                  item.isGreen || hasContractNumber
+                    ? '🏆 Итоговая позиция'
+                    : '🪄 <b>Позиция, если подать оригинал</b>'
+                }: <code>${payload.beforeGreens + 1}</code>`,
                 [
                   `До проходит: <code>${payload.beforeGreens}</code> чел.`,
                   `После проходит: <code>${payload.afterGreens}</code> чел.`,

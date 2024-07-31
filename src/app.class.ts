@@ -247,7 +247,7 @@ export class App {
         }
 
         for (const app of mapList.get(uid).values()) {
-          const { originalInfo, info, item } = app;
+          const { originalInfo, info, item, payload } = app;
           if (!originalInfo) continue;
           const apps = this.lastData.get(uid);
           // TODO: use hashName = md5(app.filename);
@@ -263,7 +263,11 @@ export class App {
           );
 
           if (apps.has(hashName)) {
-            const { info: lastInfo, item: lastItem } = apps.get(hashName);
+            const {
+              info: lastInfo,
+              item: lastItem,
+              payload: lastPayload,
+            } = apps.get(hashName);
 
             let isImportant = false;
             let isNewEnrolled = false;
@@ -321,13 +325,13 @@ export class App {
               (this.showPositions === 1 ||
                 (this.showPositions === 2 &&
                   totalSeats &&
-                  totalSeats - app.payload.beforeGreens !== 0))
+                  totalSeats - payload.beforeGreens !== 0))
             ) {
               if (posDif > 0) {
                 isImportant = true;
               }
               changes.push(
-                `🍥 <b>ПОЗИЦИЯ</b> изменена ${
+                `🍥 <b>Общая ПОЗИЦИЯ</b> изменена ${
                   posDif > 0 ? '👍' : '👎'
                 } (было: <code>${lastItem.position}</code>; стало: <code>${
                   item.position
@@ -351,11 +355,27 @@ export class App {
                 )}</code>; стало: <code>${getStatusColor(
                   item.isGreen,
                   item.isRed ||
-                    (totalSeats && totalSeats - app.payload.beforeGreens < 1),
+                    (totalSeats && totalSeats - payload.beforeGreens < 1),
                 )}</code>)`,
                 `Позиция по оригиналам: <code>${
-                  app.payload.beforeOriginals + 1
+                  payload.beforeOriginals + 1
                 }</code>`,
+              );
+            }
+
+            const greenPosDif = lastPayload.beforeGreens - payload.beforeGreens;
+            if (
+              !isNewEnrolled &&
+              lastItem.isGreen !== null &&
+              greenPosDif !== 0
+            ) {
+              isImportant = true;
+              changes.push(
+                `🏆 <b>Итоговая ПОЗИЦИЯ</b> изменена ${
+                  greenPosDif > 0 ? '📈👍' : '📉👎'
+                } (было: <code>${
+                  lastPayload.beforeGreens
+                }</code>; стало: <code>${payload.beforeGreens}</code>)`,
               );
             }
 

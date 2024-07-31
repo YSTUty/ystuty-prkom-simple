@@ -18,12 +18,7 @@ export type AbiturientInfoResponse = {
   };
 };
 
-export type LastAbiturientInfo = {
-  isCache: any;
-  info: IncomingsPageInfo;
-  item: AbiturientInfo;
-  filename: string;
-};
+export type LastAbiturientInfo = Omit<AbiturientInfoResponse, 'originalInfo'>;
 
 //
 
