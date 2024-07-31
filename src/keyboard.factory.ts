@@ -37,6 +37,7 @@ export const KeyboardKeys = {
     // settings: 'Настройки',
     stop: 'Приостановить',
     resume: 'Возобновить',
+    help: 'Описание/помощь',
   },
   notify: {
     all: 'Вкл "Все уведомления"',
@@ -59,4 +60,5 @@ export const main = (ctx: IContext) =>
           ]
         : []),
     ],
+    [KeyboardKeys.main.help],
   ]).resize();
