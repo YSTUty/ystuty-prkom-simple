@@ -36,6 +36,7 @@ export class App {
   public lastData = new Map<string, Map<string, LastAbiturientInfo>>();
 
   public showPositions: number;
+  public showBeforeAfterPositions: number;
 
   public async init() {
     await this.load();
@@ -53,16 +54,12 @@ export class App {
     }
 
     startMetric();
-    const lastShowPositions = await redisClient.get(
-      'app:options:showPositions',
+    this.showPositions = Number(
+      await redisClient.get('app:options:showPositions'),
     );
-    this.showPositions =
-      // TODO: check as bool for compability (remove then)
-      lastShowPositions === 'true'
-        ? 1
-        : lastShowPositions === 'false'
-        ? 0
-        : Number(lastShowPositions);
+    this.showBeforeAfterPositions = Number(
+      await redisClient.get('app:options:showBeforeAfterPositions'),
+    );
 
     this.runWatcherSafe().then();
   }
@@ -75,13 +72,7 @@ export class App {
       const lastShowPositions = await redisClient.get(
         'app:options:showPositions',
       );
-      // TODO: check as bool for compability (remove then)
-      state =
-        lastShowPositions === 'true'
-          ? 1
-          : lastShowPositions === 'false'
-          ? 0
-          : Number(lastShowPositions);
+      state = Number(lastShowPositions);
       state = (state + 1) % 3;
     }
     this.showPositions = state;
@@ -91,6 +82,26 @@ export class App {
       String(this.showPositions),
     );
     return this.showPositions;
+  }
+
+  /**
+   * @param state Value `0` - not show, `1` - show
+   */
+  public async toggleShowBeforeAfterPositions(state?: number) {
+    if (state === undefined) {
+      const lastState = await redisClient.get(
+        'app:options:showBeforeAfterPositions',
+      );
+      state = Number(lastState);
+      state = (state + 1) % 3;
+    }
+    this.showBeforeAfterPositions = state;
+
+    await redisClient.set(
+      'app:options:showBeforeAfterPositions',
+      String(this.showBeforeAfterPositions),
+    );
+    return this.showBeforeAfterPositions;
   }
 
   public async getTargetKeys() {

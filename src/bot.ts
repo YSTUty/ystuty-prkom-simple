@@ -250,12 +250,26 @@ bot.command('opt', async (ctx) => {
   switch (type?.toLocaleLowerCase()) {
     case 'pos':
     case 'showpositions':
-      const newState = await app.toggleShowPositions(
-        state === '0' ? 0 : state === '1' ? 1 : state === '2' ? 2 : undefined,
-      );
-      ctx.reply(
-        `showPositions = [${newState}]\nValue '0' - not show, '1' - show all, '2' - only if in enroll top`,
-      );
+      {
+        const newState = await app.toggleShowPositions(
+          state === '0' ? 0 : state === '1' ? 1 : state === '2' ? 2 : undefined,
+        );
+        ctx.reply(
+          `showPositions = [${newState}]\nValue '0' - not show, '1' - show all, '2' - only if in enroll top`,
+        );
+      }
+      break;
+
+    case 'beforeafter':
+    case 'bapos':
+      {
+        const newState = await app.toggleShowBeforeAfterPositions(
+          state === '0' ? 0 : state === '1' ? 1 : undefined,
+        );
+        ctx.reply(
+          `beforeafter = [${newState}]\nValue '0' - not show, '1' - show`,
+        );
+      }
       break;
 
     default:
@@ -464,6 +478,8 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
 
     const { info, originalInfo, item, payload } = application;
     const totalSeats = info.numbersInfo.total ?? 0;
+    const posStr = `${item.position}` || `${item.position}/${totalSeats}`;
+
     const message = [
       `📃─<b>УК</b>: [<code>${item.uid}</code>]`,
       ``,
@@ -500,7 +516,6 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
             totalSeats &&
             totalSeats - payload.beforeGreens !== 0)
             ? [
-                `Общая Позиция: <code>${item.position}/${totalSeats}</code>`,
                 ...(hasContractNumber
                   ? []
                   : [
@@ -508,6 +523,7 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
                         payload.beforeOriginals + 1
                       }</code>`,
                     ]),
+                `Общая Позиция: <code>${posStr}</code>`,
               ]
             : []),
           `Сумма баллов: <code>${item.totalScore || '-'}</code>`,
@@ -529,22 +545,28 @@ const onInfo = Composer.fork(async (ctx: ITextMessageContext) => {
           ],
         ],
         [],
+        // `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>`,
+        [
+          ...((payload.beforeGreens + 1 < totalSeats || item.isGreen) &&
+          payload.beforeGreens + payload.afterGreens > 0
+            ? [
+                `${
+                  item.isGreen || hasContractNumber
+                    ? '🏆 Итоговая позиция'
+                    : '🪄 <b>Позиция, если подать оригинал</b>'
+                }: <code>${payload.beforeGreens + 1}</code>`,
+                ...(app.showBeforeAfterPositions === 1
+                  ? [
+                      [
+                        `До проходит: <code>${payload.beforeGreens}</code> чел.`,
+                        `После проходит: <code>${payload.afterGreens}</code> чел.`,
+                      ],
+                    ]
+                  : []),
+              ]
+            : []),
+        ],
       ]),
-      // `• Баллы за собес: <code>${item.scoreInterview || 'нету'}</code>`,
-      [
-        ...((payload.beforeGreens + 1 < totalSeats || item.isGreen) &&
-        payload.beforeGreens + payload.afterGreens > 0
-          ? [
-              `${
-                item.isGreen || hasContractNumber
-                  ? '🏆 Итоговая позиция'
-                  : '🪄 <b>Позиция, если подать оригинал</b>'
-              }: <code>${payload.beforeGreens + 1}</code>`,
-              `До проходит: <code>${payload.beforeGreens}</code> чел.`,
-              `После проходит: <code>${payload.afterGreens}</code> чел.`,
-            ]
-          : []),
-      ],
     ];
     await ctx.replyWithHTML(
       message.join('\n'),
@@ -644,7 +666,7 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
 
     const totalSeats = info.numbersInfo.total ?? 0;
     const badPosition = totalSeats && totalSeats - payload.beforeGreens < 1;
-    const posStr = `${item.position}/${totalSeats}`;
+    const posStr = `${item.position}` || `${item.position}/${totalSeats}`;
     const coloredBallEmoji = utils.getStatusColor(
       item.isGreen,
       item.isRed || badPosition,
@@ -694,10 +716,14 @@ const onShortInfo = Composer.fork(async (ctx: ITextMessageContext) => {
                     ? '🏆 Итоговая позиция'
                     : '🪄 <b>Позиция, если подать оригинал</b>'
                 }: <code>${payload.beforeGreens + 1}</code>`,
-                [
-                  `До проходит: <code>${payload.beforeGreens}</code> чел.`,
-                  `После проходит: <code>${payload.afterGreens}</code> чел.`,
-                ],
+                ...(app.showBeforeAfterPositions === 1
+                  ? [
+                      [
+                        `До проходит: <code>${payload.beforeGreens}</code> чел.`,
+                        `После проходит: <code>${payload.afterGreens}</code> чел.`,
+                      ],
+                    ]
+                  : []),
               ]
             : []),
         ],
